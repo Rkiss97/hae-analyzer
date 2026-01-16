@@ -398,9 +398,12 @@ def analyze_with_api(law_text: str, exp_text: str, api_key: str) -> Dict:
     client = anthropic.Anthropic(api_key=api_key)
     prompt = create_annotation_prompt(law_text, exp_text)
     
+    estimated_output = len(exp_text) * 3
+    max_tokens = max(16384, min(estimated_output // 2, 32000))
+    
     message = client.messages.create(
         model="claude-opus-4-5-20251101",
-        max_tokens=8192,
+        max_tokens=max_tokens,
         messages=[{"role": "user", "content": prompt}]
     )
     
