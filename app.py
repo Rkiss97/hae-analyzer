@@ -1,6 +1,8 @@
 """
-HAE Elemző - Törvény Indokolás Hozzáadott Érték Vizsgálat
+HAÉ Elemző — Jogalkotói indokolások „hozzáadott értékének" (HAÉ) vizsgálata
 Streamlit alkalmazás Claude Opus 4.5 API-val
+
+© 2026 dr. Kiss Rebeka
 """
 
 import streamlit as st
@@ -10,33 +12,429 @@ from dataclasses import dataclass
 from typing import List, Dict
 
 # ============================================================
+# OLDAL KONFIGURÁCIÓ
+# ============================================================
+
+st.set_page_config(
+    page_title="HAÉ Elemző",
+    page_icon="§",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# ============================================================
 # KATEGÓRIÁK ÉS SZÍNEK
 # ============================================================
 
 HAE_CATEGORIES = {
-    1: ("CÉLMEGHATÁROZÁS", "#E53935"),
-    2: ("BELSŐ UTALÁS", "#9E9E9E"),
-    3: ("KÜLSŐ JOGFORRÁS HIVATKOZÁS", "#03A9F4"),
-    4: ("BÍRÓSÁGI JOGGYAKORLAT ÉS AB HATÁROZATOK", "#2E7D32"),
-    5: ("SZAKIRODALOM / KUTATÁSI EREDMÉNY", "#795548"),
-    6: ("ÖSSZEVETÉS KORÁBBI SZABÁLYOZÁSSAL", "#4CAF50"),
-    7: ("HATÁSVIZSGÁLAT", "#FF9800"),
-    8: ("EGYÉB MAGYARÁZAT ÉS PÉLDÁK", "#FFEB3B"),
+    1: ("Célmeghatározás", "#c0392b", "#fdecea"),
+    2: ("Jogszabályon belüli utalás más rendelkezésre", "#7f8c8d", "#f0f0f0"),
+    3: ("Kiutalás más jogforrásra", "#2980b9", "#e8f4fd"),
+    4: ("Joggyakorlatra való hivatkozás", "#1e8449", "#e8f8f0"),
+    5: ("Szakirodalomra való hivatkozás", "#6d4c41", "#f0ebe8"),
+    6: ("Összevetés a korábbi szabályozással", "#27ae60", "#eafaf1"),
+    7: ("Hatásvizsgálat bemutatása", "#e67e22", "#fef5e7"),
+    8: ("Egyéb magyarázatok, példák", "#f1c40f", "#fef9e7"),
 }
 
 NEM_CATEGORIES = {
-    1: ("SZÓ SZERINTI ÁTMÁSOLÁS", "#9C27B0"),
-    2: ("ÁTFOGALMAZÁS", "#1565C0"),
-    3: ("KIVONATOLÁS", "#E0E0E0"),
-    4: ("HIBÁS INDOKOLÁS", "#212121"),
+    1: ("Szó szerinti átmásolás", "#8e44ad", "#f4ecf7"),
+    2: ("Átfogalmazás", "#1a5276", "#eaf2f8"),
+    3: ("Kivonatolás", "#95a5a6", "#f2f3f4"),
+    4: ("Normaszövegnek való ellentmondás", "#1c1c1c", "#ebedef"),
 }
 
 # ============================================================
-# SYSTEM PROMPT - EREDETI
+# CUSTOM CSS
+# ============================================================
+
+CUSTOM_CSS = """
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,600;8..60,700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+    .stApp { font-family: 'DM Sans', sans-serif; }
+    #MainMenu, footer, header {visibility: hidden;}
+    .stDeployButton {display: none;}
+
+    /* ── Sidebar — enyhén sötétebb mint a fő terület ── */
+    section[data-testid="stSidebar"] {
+        background: #edf0f4;
+        border-right: 1px solid #dce0e6;
+    }
+    section[data-testid="stSidebar"] * {
+        color: #374151 !important;
+    }
+    section[data-testid="stSidebar"] .stTextInput label {
+        color: #1f2937 !important;
+        font-weight: 500 !important;
+    }
+    section[data-testid="stSidebar"] .stTextInput input {
+        color: #1f2937 !important;
+        background: #fff !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 8px !important;
+    }
+    section[data-testid="stSidebar"] .stTextInput input:focus {
+        border-color: #4a6fa5 !important;
+        box-shadow: 0 0 0 2px rgba(74,111,165,0.15) !important;
+    }
+
+    /* ── Sidebar: fejléc igazítva a main headerhez ── */
+    section[data-testid="stSidebar"] > div:first-child {
+        padding-top: 28px !important;
+    }
+    .sidebar-logo {
+        font-family: 'Source Serif 4', serif;
+        font-size: 22px;
+        font-weight: 700;
+        color: #1f2937 !important;
+        margin-bottom: 24px;
+        padding-top: 12px;
+    }
+
+    .sidebar-title {
+        font-family: 'Source Serif 4', serif;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: #6b7280 !important;
+        margin: 28px 0 12px 0;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #d5d9e0;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 4px 0;
+        font-size: 12.5px;
+        line-height: 1.4;
+        color: #374151 !important;
+    }
+    .legend-swatch {
+        width: 12px;
+        height: 12px;
+        min-width: 12px;
+        border-radius: 3px;
+        display: inline-block;
+    }
+    .legend-code {
+        font-weight: 600;
+        font-size: 11px;
+        color: #9ca3af !important;
+        min-width: 18px;
+    }
+    .legend-label { color: #374151 !important; }
+    .sidebar-model { font-size: 12px; color: #9ca3af !important; }
+
+    /* ── Main header — igazítva a sidebar-hoz ── */
+    .main-header {
+        font-family: 'Source Serif 4', serif;
+        font-size: 38px;
+        font-weight: 700;
+        color: #1a1f2e;
+        margin-bottom: 4px;
+        letter-spacing: -0.5px;
+        padding-top: 0;
+    }
+    .main-subtitle {
+        font-size: 15px;
+        color: #7f8c8d;
+        margin-bottom: 36px;
+        font-weight: 400;
+    }
+
+    /* ── Input section ── */
+    .input-label {
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #5d6d7e;
+        margin-bottom: 8px;
+    }
+    .stTextArea textarea {
+        font-family: 'DM Sans', sans-serif !important;
+        font-size: 13.5px !important;
+        line-height: 1.65 !important;
+        border: 1.5px solid #e5e8ed !important;
+        border-radius: 10px !important;
+        padding: 16px !important;
+        background: #fafbfc !important;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .stTextArea textarea:focus {
+        border-color: #4a6fa5 !important;
+        box-shadow: 0 0 0 3px rgba(74,111,165,0.1) !important;
+        background: #fff !important;
+    }
+
+    /* ── Analyze button ── */
+    div.stButton > button {
+        width: 100%;
+        font-family: 'DM Sans', sans-serif;
+        font-weight: 600;
+        font-size: 15px;
+        letter-spacing: 0.5px;
+        padding: 14px 32px;
+        border-radius: 10px;
+        border: none;
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        color: #fff;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        box-shadow: 0 2px 8px rgba(44,62,80,0.2);
+    }
+    div.stButton > button:hover {
+        background: linear-gradient(135deg, #34495e 0%, #4a6278 100%);
+        box-shadow: 0 4px 16px rgba(44,62,80,0.3);
+        transform: translateY(-1px);
+    }
+    div.stButton > button:active { transform: translateY(0); }
+
+    /* ── Results ── */
+    .results-header {
+        font-family: 'Source Serif 4', serif;
+        font-size: 28px;
+        font-weight: 700;
+        color: #1a1f2e;
+        margin: 48px 0 24px 0;
+        padding-top: 32px;
+        border-top: 2px solid #e5e8ed;
+    }
+    .section-header {
+        font-family: 'Source Serif 4', serif;
+        font-size: 20px;
+        font-weight: 600;
+        color: #1a1f2e;
+        margin: 36px 0 16px 0;
+    }
+
+    /* ── Metric cards — HAÉ/NEM kiemeltek ── */
+    .metric-row {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 28px;
+    }
+    .metric-card {
+        flex: 1;
+        background: #fff;
+        border: 1px solid #e5e8ed;
+        border-radius: 12px;
+        padding: 24px;
+        text-align: center;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .metric-card.card-hae {
+        background: #f0faf4;
+        border: 2px solid #27ae60;
+        box-shadow: 0 2px 8px rgba(39,174,96,0.12);
+    }
+    .metric-card.card-nem {
+        background: #fef5f3;
+        border: 2px solid #e74c3c;
+        box-shadow: 0 2px 8px rgba(231,76,60,0.10);
+    }
+    .metric-value {
+        font-family: 'Source Serif 4', serif;
+        font-size: 36px;
+        font-weight: 700;
+        color: #1a1f2e;
+        line-height: 1.1;
+    }
+    .metric-label {
+        font-size: 11.5px;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        color: #95a5a6;
+        margin-top: 6px;
+        font-weight: 500;
+    }
+
+    /* ── Quality badge (4 fokozat) ── */
+    .quality-badge {
+        display: inline-block;
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+    .quality-excellent {
+        background: #d5f5e3;
+        color: #1a8c4e;
+        border: 1px solid #82e0aa;
+    }
+    .quality-good {
+        background: #eafaf1;
+        color: #1e8449;
+        border: 1px solid #a9dfbf;
+    }
+    .quality-medium {
+        background: #fef9e7;
+        color: #b7950b;
+        border: 1px solid #f9e79f;
+    }
+    .quality-poor {
+        background: #fdecea;
+        color: #c0392b;
+        border: 1px solid #f5b7b1;
+    }
+
+    /* ── Progress bar ── */
+    .progress-container { margin: 20px 0 32px 0; }
+    .progress-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+    .progress-hae-label { color: #27ae60; }
+    .progress-nem-label { color: #e74c3c; }
+    .progress-bar-bg {
+        height: 10px;
+        background: #fdecea;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+    .progress-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #27ae60, #2ecc71);
+        border-radius: 5px;
+        transition: width 0.8s ease;
+    }
+
+    /* ── Category breakdown ── */
+    .breakdown-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin: 20px 0;
+    }
+    .breakdown-section {
+        background: #fff;
+        border: 1px solid #e5e8ed;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .breakdown-title {
+        font-family: 'DM Sans', sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin-bottom: 16px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e5e8ed;
+    }
+    .breakdown-title.hae { color: #27ae60; }
+    .breakdown-title.nem { color: #e74c3c; }
+
+    .cat-row {
+        display: flex;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #f5f6f8;
+        font-size: 13px;
+    }
+    .cat-row:last-child { border-bottom: none; }
+    .cat-swatch { width: 10px; height: 10px; min-width: 10px; border-radius: 2px; margin-right: 10px; }
+    .cat-code { font-weight: 600; color: #7f8c8d; font-size: 11px; min-width: 40px; margin-right: 8px; }
+    .cat-name { flex: 1; color: #2c3e50; }
+    .cat-chars { font-weight: 500; color: #7f8c8d; font-size: 12px; min-width: 60px; text-align: right; margin-right: 12px; }
+    .cat-pct { font-weight: 700; min-width: 48px; text-align: right; font-size: 13px; }
+    .cat-bar-bg { width: 60px; height: 4px; background: #f0f0f0; border-radius: 2px; margin-left: 12px; overflow: hidden; }
+    .cat-bar-fill { height: 100%; border-radius: 2px; }
+
+    /* ── Annotated text ── */
+    .annotated-container {
+        background: #fff;
+        border: 1px solid #e5e8ed;
+        border-radius: 12px;
+        padding: 28px 32px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        line-height: 1.85;
+        font-size: 14px;
+        color: #2c3e50;
+    }
+    .ann-segment {
+        padding: 2px 1px;
+        border-radius: 3px;
+        border-bottom: 2.5px solid transparent;
+        transition: all 0.15s ease;
+        cursor: default;
+    }
+    .ann-segment:hover { filter: brightness(0.95); }
+    .ann-tag {
+        font-size: 9.5px;
+        font-weight: 700;
+        padding: 1px 5px;
+        border-radius: 3px;
+        margin-right: 2px;
+        vertical-align: middle;
+        letter-spacing: 0.3px;
+        color: #fff;
+    }
+
+    /* ── Segment list ── */
+    .seg-list-item {
+        display: flex;
+        gap: 12px;
+        padding: 12px 16px;
+        border-bottom: 1px solid #f5f6f8;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+    .seg-list-item:last-child { border-bottom: none; }
+    .seg-list-badge {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 4px;
+        white-space: nowrap;
+        height: fit-content;
+        margin-top: 2px;
+    }
+    .seg-list-text { color: #5d6d7e; flex: 1; }
+    .seg-list-chars { color: #95a5a6; font-size: 11px; white-space: nowrap; margin-top: 2px; }
+
+    /* ── Footer ── */
+    .app-footer {
+        text-align: center;
+        padding: 40px 0 20px 0;
+        font-size: 12px;
+        color: #bdc3c7;
+        border-top: 1px solid #e5e8ed;
+        margin-top: 48px;
+    }
+
+    /* ── Streamlit overrides ── */
+    div[data-testid="stExpander"] {
+        border: 1px solid #e5e8ed !important;
+        border-radius: 12px !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+    }
+    .stSpinner > div { border-color: #2c3e50 transparent transparent !important; }
+
+    @media (max-width: 768px) {
+        .metric-row { flex-direction: column; }
+        .breakdown-grid { grid-template-columns: 1fr; }
+        .main-header { font-size: 28px; }
+    }
+</style>
+"""
+
+
+# ============================================================
+# SYSTEM PROMPT — EREDETI
 # ============================================================
 
 SYSTEM_PROMPT = """
-
 ───────────────────────────────────────────────────────────────────────
 ALAPKÉRDÉS
 ───────────────────────────────────────────────────────────────────────
@@ -50,142 +448,116 @@ vagy olyan információt közöl, ami a törvényszövegből nem olvasható ki.
 Nem magyarázat: ha más szavakkal mondja ugyanazt, amit a törvény,
 vagy összefoglalja annak tartalmát.
 
+
 ───────────────────────────────────────────────────────────────────────
 HOZZÁADOTT ÉRTÉK KATEGÓRIÁK - jelölés: [HAE:n]...[/HAE]
 ───────────────────────────────────────────────────────────────────────
 
-[HAE:1] Célmeghatározás
+[HAE:1] CÉLMEGHATÁROZÁS
    A TÖRVÉNY vagy a KONKRÉT SZAKASZ céljának, a JOGALKOTÓ SZÁNDÉKÁNAK,
    a SZABÁLYOZÁS CÉLJÁNAK EXPLICIT megfogalmazása.
+   Kulcskifejezések: „célja", „érdekében", „annak érdekében", „biztosítása
+   céljából", „szükségessé teszi/tette", „indokolja".
+   VIGYÁZAT: ha a „célja" vagy „érdekében" csak a törvény tartalmát
+   ismerteti (pl. „a törvény célja, hogy szabályozza a..."), az HAE:2.
+   Ide KIZÁRÓLAG a tényleges társadalmi/politikai/gazdasági célt
+   megfogalmazó szöveg tartozik.
 
-   Jellemző fordulatok:
-   - "a törvény célja, hogy"
-   - "e szakasz célja"
-   - "a szabályozás célja"
-   - "e rendelkezés célja"
-   - "a jogalkotó szándéka"
-   - "célul tűzi ki"
+   Példák:
+   "A törvényjavaslat alapvető célja új szakosított hitelintézeti típus
+    bevezetése a lakáscélú előtakarékosság ösztönzése céljából."
+   "A szabályozás célja, hogy megalapozza a lakáselőtakarékossági
+    tevékenységre specializálódott pénztárak hosszú távú stabil működését."
+   "A gyülekezési jog első generációs politikai jog, amely alapján
+    mindenki jogosult békés gyűléseken részt venni."
+   "A törvény abból indul ki, hogy az új Polgári Törvénykönyvben egy
+    szociális elemekkel átszőtt piacgazdaság magánjogi feltételeit kell
+    megteremteni."
 
-   NEM ide tartozik (ezek HAE:8 – egyéb magyarázat):
-   - "X érdekében Y-t tesz lehetővé" - ez magyarázat, de nem célmeghatározás
-   - "a közbiztonság érdekében" - ez magyarázat, de nem feltétlenül a törvény célja
-   - "a feladatok ellátása érdekében" - ez kontextus, további magyarázat, ha nem szerepel a törvényben
-   - "lehetőséget ad arra, hogy" - ez amit a törvény tesz, de nem cél
-   - "megteremti a lehetőségét annak, hogy" - ez eredmény, de nem cél
-   - "szükségessé válhat" - ez magyarázat, de nem célmeghatározás
-   - "elengedhetetlen" - ez magyarázat, de nem célmeghatározás
 
-   A cél a MIÉRT, nem a MIT. Ha az indokolás azt írja le zanzásítva, hogy mit tesz lehetővé a törvény, az kivonatolás (NEM:3) vagy átfogalmazás (NEM:2), nem célmeghatározás.
+[HAE:2] JOGSZABÁLYON BELÜLI UTALÁS MÁS RENDELKEZÉSRE
+   A TÖRVÉNY SZERKEZETÉNEK ISMERTETÉSE, belső összefüggések bemutatása,
+   paragrafusokra vagy fejezetekre utalás, a szabályozás logikájának
+   vagy felépítésének leírása.
+   Ha az indokolás tartalmilag ugyanazt mondja, mint a törvényszöveg,
+   de a szabályozás szerkezetére/kontextusára utal (pl. „a törvény X
+   fejezetében..."), az HAE:2.
 
-   Példa - HAE:1 (valódi célmeghatározás):
-   "A törvény célja a gyülekezési jog gyakorlásának szabályozása."
-   "A jogalkotó szándéka a korábbi hiányosságok orvoslása."
 
-   Példa - HAE:8 (magyarázat, NEM célmeghatározás):
-   "A közbiztonság érdekében szükségessé válhat az ellenőrzés."
-   "A feladatok ellátása érdekében elengedhetetlen a jelenlét."
-   "Ez az együttműködési kötelezettség garantálja a békés jelleg biztosítását."
-   (Ez utóbbi azért HAE:8, mert:
-   Leírja az eredményt (mit garantál)
-   Magyarázza a szabály funkcióját
-   De NEM mondja ki, hogy "a törvény célja" vagy "a jogalkotó szándéka", adott jogintézmény, szakasz, bevezetett jogintézmény stb. célja mi lenne)
+[HAE:3] KIUTALÁS MÁS JOGFORRÁSRA
+   Más jogszabályra, EU-jogra, nemzetközi egyezményre, Alaptörvényre
+   történő hivatkozás. IDE TARTOZIK az Alkotmánybíróság (AB) konkrét
+   határozatára hivatkozás is, ha jogforrásként/precedensként hivatkozik
+   rá. (De ha jogalkalmazási tapasztalatot idéz, az HAE:4.)
 
-[HAE:2] Belső utalás (ugyanezen törvényen belüli kereszthivatkozás)
-   Utalás a fenti törvényszöveg más rendelkezéseire.
-   Példák: "az 51. § szerinti szabályokat alkalmazni kell",
-   "a fenti szabályokkal összhangban", "e törvény 10. §-a alapján", "a javaslat 2. § (2) bekezdése egyértelművé teszi"
+   Példák:
+   "a Ptk. 6:519. §-a alapján"
+   "összhangban az EU 2014/65/EU irányelvével"
+   "az Alaptörvény XXVIII. cikke értelmében"
 
-[HAE:3] Külső jogforrás hivatkozás (más jogszabályra utalás)
-   Konkrétan megnevezett más jogszabályra való hivatkozás (akár konkrét jogszabály szám nélkül).
-   Példák: "az Alaptörvény 15. cikk (2) bekezdése szerint",
-   "a 2010. évi XLIII. törvény (Ksztv.) szabályozását átvéve",
-   "a Ksztv. rendelkezéseit átemelve", "a Ptk. szerint"
-   "a jogalkotásról szóló törvény alapján", "a kereskedelemről szóló törvényben meghatározott"
-   Ide tartoznak az alacsonyabb jogforrásokra (kormányrendeletekre) való utalások is.
-   Példák: "a veszélyhelyzet kihirdetéséről szóló 478/2020. (XI. 3.) Korm. rendelet szerinti"
 
-   Fontos, hogy salátatörvény jellegű (sok törvényt egyszerre módosító) törvényeknél pusztán azért, mert a szövegben van más jogszabály neve, nem HAE, ha pont azt a jogszabályt módosítja.
+[HAE:4] JOGGYAKORLATRA VALÓ HIVATKOZÁS
+   Bírói gyakorlatra, ítélkezési tapasztalatokra, jogalkalmazási
+   gyakorlatra hivatkozás. AB határozatra hivatkozás, ha nem
+   jogforrásként, hanem a tapasztalat/gyakorlat bemutatásaként
+   szerepel.
 
-[HAE:4] Bírósági joggyakorlat és AB határozatok
-   Bírósági döntésekre, AB határozatokra, EJEB döntésére, joggyakorlatra, bírósági gyakorlatra, konkrét ítéletre való utalás.
-   Példák: "a bírói gyakorlattal egyezően", "az AB határozat alapján", "általános joggyakorlattal egyezően"
-   Ide tartozik: joggyakorlat alapján levont olyan következtetés, ami közvetlen utalást tartalmaz valamilyen bírósági álláspontra, jogalkalmazói visszajelzés alapján történő jogalkotásra való utalás, bíróságok álláspontjának kifejtése, arra való konkrét utalással
-   Nem tartozik ide: alapvető jogokra való általános utalás
+   Példák:
+   "a bírói gyakorlat e kérdésben nem egységes"
+   "a Kúria joggyakorlat-elemző csoportjának megállapítása szerint"
 
-[HAE:5] Szakirodalom, kutatási eredmény
-   Tudományos művekre, szakmai jelentésekre való hivatkozás.
-   Példák: "a KSH jelentése szerint", "az OECD ajánlásaival összhangban", "Vékás Lajos professzor munkái", "a szakirodalom álláspontját követve", "a szakirodalmi álláspont alapján"
 
-[HAE:6] Összevetés korábbi szabályozással
-   A korábbi és új szabályozás viszonyának bemutatása, konkrét
-   jogszabály megnevezése nélkül.
-   Példák: "a korábbi szabályozással egyezően", "a hatályos
-   szabályozást átvéve", "új eleme a törvénynek", "korábban nem volt", "közjogi hagyományoknak megfelelően", "fontos változás", "vonatkozó rendelkezések elhagyásra kerültek", "továbbra is", "adott rendelkezés kivezetésével"
-   Ide tartozik, ha az indokolás jelzi, hogy valami "új", "bevezet", "meghonosít", "kivezet", "megszüntet", "rendelkezést fenntart", "változtat", "eltörli" - ez korábbi állapothoz való viszonyítás.
+[HAE:5] SZAKIRODALOMRA VALÓ HIVATKOZÁS
+   Tudományos forrásra, kutatási eredményre, szakirodalomra hivatkozás
+   KONKRÉT szerzővel, művel, adattal.
 
-[HAE:7] Hatásvizsgálat
+   Példák:
+   "Kukorelli István az 55/2001. (XI. 29.) AB határozathoz fűzött
+    párhuzamos indokolásában kifejtette, hogy..."
+   "egy 2019-es MTA-kutatás szerint a kkv-k 47%-a..."
+
+
+[HAE:6] ÖSSZEVETÉS A KORÁBBI SZABÁLYOZÁSSAL
+   A korábbi jogi állapot bemutatása, változások ismertetése,
+   összehasonlítás a korábbi szabályozással, új elemek kiemelése.
+
+   Kulcskifejezések: „korábban", „a korábbi szabályozáshoz képest",
+   „a hatályos jog szerint", „eddig", „újdonság", „módosítja".
+
+
+[HAE:7] HATÁSVIZSGÁLAT BEMUTATÁSA
    A szabályozás hatásainak bemutatása KONKRÉT ADATOKKAL, SZÁMOKKAL
-   alátámasztva. Előzetes hatásvizsgálatra, kutatásra, felmérésre való
-   hivatkozás eredményekkel.
+   alátámasztva — érintett csoportok létszáma, költségvetési hatás
+   Ft-ban, adminisztratív terhek változása stb.
+   VIGYÁZAT: ha nincs konkrét szám, csak általános utalás a hatásra,
+   az HAE:8.
 
-   Ide tartozik, ha az indokolás tartalmaz:
-   - Érintett csoportok létszámát (fő, db, vállalkozás)
-     Pl. "kb. 50 000 vállalkozást érint", "1 millió nyugdíjast érint"
-   - Költségvetési / gazdasági hatást konkrét összeggel (Ft)
-     Pl. "évi 2 milliárd Ft megtakarítás", "500 millió Ft többletkiadás"
-   - Adminisztratív terhek változását számszerűsítve (Ft, óra, %)
-     Pl. "évi 10 000 Ft/vállalkozás tehercsökkenés", "30%-kal kevesebb ügyintézési idő"
-   - Foglalkoztatási hatást létszámmal
-     Pl. "200 új munkahely", "50 fős létszámcsökkenés"
-   - Más országok tapasztalatát konkrét eredményekkel
-     Pl. "Ausztriában 15%-os növekedést eredményezett, a hatásvizsgálat alapján hasonló hatások várhatók Magyarországon is a szabályozás bevezetésével"
-   - Konkrét időtávot
-     Pl. "2020-2024 között", "a bevezetést követő 4 évben"
 
-   NEM ide tartozik (ezek HAE:8):
-   - "adminisztratív terheket csökkent" (szám nélkül)
-   - "a jogalkalmazást megkönnyíti" (konkrétum nélkül)
-   - "költségvetési hatása minimális" (összeg nélkül)
-   - "a többi EU tagállamhoz hasonlóan" (eredmény nélkül)
-   - "gazdasági szempontból indokolt" (adat nélkül)
-   - "széles társadalmi réteget érint" (létszám nélkül)
+[HAE:8] EGYÉB MAGYARÁZATOK, PÉLDÁK
+   Minden olyan tartalmi hozzáadott érték, ami nem sorolható a fenti
+   kategóriákba: általános háttér, kontextus, elméleti megalapozás,
+   gyakorlati példák ADAT NÉLKÜL, fogalommagyarázat, nemzetközi
+   kitekintés konkrét adat nélkül.
 
-[HAE:8] Egyéb magyarázat és példák
-   Indokolás, érvelés, háttérinformáció, összefüggés-feltárás.
-   Példák: "tekintettel arra, hogy", "figyelemmel arra", "mivel",
-   "ezért szükséges", "ugyanis", "ennek indoka"
-   Ide tartoznak a törvényben nem szereplő konkrét példák is.
-
-   Ide tartozik még:
-   - Általános hatásokra utalás konkrét adat nélkül
-     ("csökkenti a terheket", "megkönnyíti a jogalkalmazást")
-   - Nemzetközi összehasonlítás adatok nélkül
-     ("EU tagállamokhoz hasonlóan", "nemzetközi gyakorlatnak megfelelően")
 
 ───────────────────────────────────────────────────────────────────────
 NEM HOZZÁADOTT ÉRTÉK KATEGÓRIÁK - jelölés: [NEM:n]...[/NEM]
 ───────────────────────────────────────────────────────────────────────
 
-[NEM:1] Szó szerinti átmásolás
-   A törvényszöveg változtatás nélküli átvétele.
+[NEM:1] SZÓ SZERINTI ÁTMÁSOLÁS
+   Az indokolás szó szerint megegyezik a törvényszöveggel.
 
-[NEM:2] Átfogalmazás (parafrázis)
-   A törvényszöveg más szórenddel, szinonimákkal való visszaadása,
-   amely nem ad új információt.
+[NEM:2] ÁTFOGALMAZÁS
+   Tartalmilag ugyanaz, mint a törvényszöveg, csak más szavakkal,
+   más mondatszerkezettel — de NEM ad hozzá semmit.
 
-[NEM:3] Kivonatolás
-   A törvényszöveg tömörítése, összefoglalása magyarázat nélkül.
-   Jellemző formulák: "a törvény rendelkezik", "meghatározza",
-   "szabályozza", "rögzíti", "kimondja"
-   Szintén ide tartozik, ha az indokolás csak annyit mond, de nem fejti ki jobban a mögöttes okokat vagy egyéb részleteket, hogy "hatályon kívül helyező rendelkezések", "jogtechnikai jellegű pontosítás", " felhatalmazó rendelkezések",
-   "technikai jellegű szövegcserés módosítás", "terminológiai pontosítást tartalmaz", "jogharmonizációs záradékot tartalmaz", "nyelvhelyességi korrekció", "hatályon kívül helyező rendelkezéseket tartalmaz", "sarkalatossági záradék kiegészítése", "átmeneti rendelkezés" - és ehhez hasonló tartalomjegyzék szerű kivonatolások
+[NEM:3] KIVONATOLÁS
+   A törvényszöveg kivonatolt összefoglalása — rövidebb, de tartalmilag
+   nem ad hozzá.
 
-[NEM:4] Hibás indokolás
-   Ide tartozik:
-   - Ellentmondás: az indokolás tartalmilag ellentmond a törvényszövegnek
-   - Normaszöveghez nem kapcsolódó magyarázat: az indokolás nem a hivatkozott szakaszhoz
-     kapcsolódik, hanem más rendelkezéseket ismertet, tartalmilag nincsen köze a hozzá tartozó törvényszöveghez.
-     Olyan többlet információk, amik nem amgyarázatok, hanem túllépnek a normaszövegen, az abban található állításokból egyáltalán nem következnek.
+[NEM:4] NORMASZÖVEGNEK VALÓ ELLENTMONDÁS
+   Az indokolás nem ahhoz a szakaszhoz tartozik, amelyhez rendelték,
+   vagy tartalmilag téves, ellentmond a normaszövegnek.
 
 
 ───────────────────────────────────────────────────────────────────────
@@ -193,104 +565,38 @@ SZEGMENTÁLÁSI SZABÁLYOK
 ───────────────────────────────────────────────────────────────────────
 
 Kötelező mondaton belül is szegmentálni, ha vegyes a tartalom.
-Ezekben az esetekben ne annotálj teljes mondatokat egyben!
 
-Példa - beékelt HAE:6:
-"A törvény - a hatályos szabályozást átvéve - rendelkezik a testületekről."
-
+Példa – beékelt HAE:3:
+"A törvény – az Alkotmánybíróság határozatára figyelemmel – új szabályokat vezet be."
 Helyes annotáció:
-[NEM:3]A törvény -[/NEM] [HAE:6]a hatályos szabályozást átvéve[/HAE] [NEM:3]- rendelkezik a testületekről.[/NEM]
+[HAE:2] A törvény – [/HAE][HAE:3] az Alkotmánybíróság határozatára figyelemmel [/HAE][HAE:6] – új szabályokat vezet be. [/HAE]
 
-Példa - beékelt HAE:3:
-"A törvény - átemelve a Ksztv. rendelkezéseit - meghatározza a hatásköröket."
-
+Példa – célmeghatározás + szerkezet:
+"A törvény célja a hatékonyabb működés, ennek érdekében szabályozza a szervek jogállását."
 Helyes annotáció:
-[NEM:3]A törvény -[/NEM] [HAE:3]átemelve a Ksztv. rendelkezéseit[/HAE] [NEM:3]- meghatározza a hatásköröket.[/NEM]
+[HAE:1] A törvény célja a hatékonyabb működés, [/HAE][HAE:2] ennek érdekében szabályozza a szervek jogállását. [/HAE]
 
-Példa - célmeghatározás + kivonatolás:
-"A törvény a szervi és személyi megközelítés egységét tűzi ki célul, szabályozza a szervek jogállását."
-
-Helyes annotáció:
-[HAE:1]A törvény a szervi és személyi megközelítés egységét tűzi ki célul,[/HAE] [NEM:3]szabályozza a szervek jogállását.[/NEM]
-
-Figyelj a gondolatjelek, zárójelek közötti beszúrásokra - ezek gyakran
-külön kategóriába tartoznak!
 
 ───────────────────────────────────────────────────────────────────────
 ELHATÁROLÁSOK
 ───────────────────────────────────────────────────────────────────────
 
-HAE:2 vs HAE:3 vs HAE:6:
-- Ugyanezen törvény szakaszára utal → HAE:2
-- Más jogszabályra, konkrétan megnevezve (Ksztv., Ptk., stb.) → HAE:3
-- Korábbi/hatályos szabályozásra általában, jogszabály név nélkül → HAE:6
+HAE:2 vs HAE:6:
+   A törvény szerkezetét, tartalmát ismerteti → HAE:2
+   A változást, újítást, korábbi állapotot mutatja be → HAE:6
 
-NEM:2 vs NEM:3:
-- Átfogalmazás: a törvény egy részét mondja más szavakkal
-- Kivonatolás: a törvény tartalmát foglalja össze, tömöríti
+HAE:3 vs HAE:4:
+   Jogszabályra, AB határozatra hivatkozás → HAE:3
+   Bírói gyakorlatra, jogalkalmazási tapasztalatra utalás → HAE:4
 
-HAE:8 vs NEM:3 elhatárolás:
+HAE:7 vs HAE:8:
+   Konkrét adat, szám, tény → HAE:7
+   Általános utalás hatásra, adat nélkül → HAE:8
 
-Kivonatolás (NEM:3): pusztán összefoglalja vagy tömöríti a törvényszöveget,
-nem ad hozzá semmit a megértéshez.
+HAE:6 vs HAE:8:
+   Korábbi szabályozáshoz viszonyít, változást mutat be → HAE:6
+   Általános háttér, kontextus, elméleti megalapozás → HAE:8
 
-Magyarázat (HAE:8): segíti a megértést, akkor is, ha a törvényből
-kiolvasható az információ. Ide tartozik:
-- Ha az indokolás összefüggések mentén fűzi össze a szöveget
-- Ha strukturáltan mutatja be a szabályozás logikáját
-- Ha egy laikus számára érthetőbbé teszi a törvényt
-  (pl. hosszabb felsorolás, komplex szabályrendszer magyarázata)
-- Ha összekapcsolja a különböző szakaszok tartalmát
-- Jellemző fordulatok: "Nem csak X, hanem Y is", "beszélhetünk",
-  "tekinthetünk", "ez azt jelenti, hogy", "vagyis", "azaz"
-
-Példák:
-
-NEM:3 (kivonatolás - nem segíti a megértést):
-"A törvény meghatározza a kormányzati igazgatási szervek körét."
-"A törvény szabályozza a tisztségviselők jogviszonyát."
-
-HAE:8 (magyarázat - segíti a megértést):
-"A kormányzati igazgatási szervek köre egyszerre jelent egy bővebb
-és egy szűkebb szervi kört a központi államigazgatási szervekhez képest."
-"Nem csak szervek, hanem egyes vezetők tekintetében is beszélhetünk
-irányításról."
-"A három jogviszony-típus eltérő jellegű feladatokat lát el: a politikai
-a kormányzati döntéshozatalban, a biztosi a kiemelt projektek vezetésében,
-a szakmai pedig a napi operatív működésben vesz részt."
-"Valamilyen másik jogintézményre irányadó szabályoktól eltérő módon szabályozza"
-
-A kérdés tehát: "Segíti-e a laikus olvasó megértését, vagy csak
-megismétli/tömöríti a törvényt?"
-
-HAE:7 vs HAE:8 elhatárolás:
-A hatásvizsgálat (HAE:7) csak akkor, ha VAN BENNE KONKRÉT SZÁM vagy ADAT.
-Ha csak általánosan utal hatásra, az magyarázat (HAE:8).
-
-Példák:
-
-HAE:7 (van konkrét adat):
-- "Az intézkedés kb. 120 000 vállalkozást érint, évi átlagosan
-   15 000 Ft adminisztratív tehercsökkenést eredményezve."
-- "A KSH adatai szerint 2019-ben 340 000 egyéni vállalkozó működött,
-   közülük mintegy 40%-ot érint a szabályozás."
-- "Ausztriában a hasonló szabályozás 15%-os növekedést eredményezett,
-   a hatásvizsgálat alapján hasonló eredmények várhatók."
-- "A bevezetést követő első évben 25%-kal csökkent az ügyintézési idő."
-
-HAE:8 (nincs konkrét adat, csak általános utalás):
-- "Az intézkedés jelentős számú vállalkozást érint és csökkenti
-   az adminisztratív terheket."
-- "A szabályozás a vállalkozások széles körét érinti."
-- "A többi EU tagállamhoz hasonlóan"
-- "A V4 országokban is hasonló szabályozás működik"
-- "Nemzetközi gyakorlatnak megfelelően"
-- "Gazdasági szempontból indokolt"
-- "A jogalkalmazást megkönnyíti"
-
-HAE:2 vs NEM:4 elhatárolás:
-- HAE:2: Belső utalás, ami ÖSSZHANGBAN VAN a törvényszöveggel
-- NEM:4: Az állítás ELLENTMOND a törvénynek, vagy más értéket mond
 
 ───────────────────────────────────────────────────────────────────────
 KIMENET
@@ -299,138 +605,111 @@ KIMENET
 Az indokolás teljes szövegét annotálni kell, minden karakter tartozzon
 valamelyik kategóriába.
 
-A válaszban csak az annotált szöveg szerepeljen, tagekkel.
-Más szöveg, magyarázat vagy megjegyzés ne legyen.
+A válaszban CSAK az annotált szöveg szerepeljen, semmilyen más szöveg,
+magyarázat vagy megjegyzés ne legyen.
+
 
 ───────────────────────────────────────────────────────────────────────
 KONZISZTENCIA
 ───────────────────────────────────────────────────────────────────────
 
-Konzisztensen tarsd fent az egész dokumentumban az alkalmazott annotálási szabályokat,
-ellenőrizd, hogy mondaton belül is szegmentáltál, ha vegyes a tartalom. Vegyes tartalomnál ne annotálj teljes mondatokat egyben!
+Konzisztensen tartsd fenn az egész dokumentum egységében az alkalmazott
+annotálási szabályokat.
 
-Légy következetes a kategóriák alkalmazásában. Ha egy adott típusú
-szövegrészt (pl. "a törvény szabályozza...") NEM:3-nak minősítettél,
-akkor minden hasonló szerkezetű, logikájú, tartalmú szövegrészt is NEM:3-nak kell
-minősítened, ha adott szakasz vonatkozásában a törvényszöveghez viszonyítva ugyanannak a kategóriának felel meg.
+Légy következetes a kategóriák alkalmazásában.
 
-Kerülendő: inkonzisztens döntés a határeseteknél.
-
-
+Ellenőrizd, hogy mondaton belül is szegmentáltál, ha vegyes a tartalom.
+Vegyes tartalomnál ne annotálj teljes mondatokat egyben!
 """
 
 
 # ============================================================
-# ADATSTRUKTÚRÁK
+# DATA STRUCTURES
 # ============================================================
 
 @dataclass
-class AnnotatedSegment:
-    """Egy annotált szegmens"""
-    text: str
-    category_type: str  # "HAE" vagy "NEM"
+class Segment:
+    category_type: str
     category_num: int
-    
+    text: str
+    char_count: int = 0
+
+    def __post_init__(self):
+        self.char_count = len(self.text)
+
     @property
-    def char_count(self) -> int:
-        return len(self.text)
-    
+    def display_type(self) -> str:
+        return "HAÉ" if self.category_type == "HAE" else "NEM"
+
     @property
-    def is_hae(self) -> bool:
-        return self.category_type == "HAE"
-    
-    @property
-    def category_name(self) -> str:
-        if self.is_hae:
-            return HAE_CATEGORIES.get(self.category_num, ("?", "#000"))[0]
-        else:
-            return NEM_CATEGORIES.get(self.category_num, ("?", "#000"))[0]
-    
+    def label(self) -> str:
+        return f"{self.display_type}:{self.category_num}"
+
     @property
     def color(self) -> str:
-        if self.is_hae:
-            return HAE_CATEGORIES.get(self.category_num, ("?", "#000"))[1]
-        else:
-            return NEM_CATEGORIES.get(self.category_num, ("?", "#000"))[1]
+        cats = HAE_CATEGORIES if self.category_type == "HAE" else NEM_CATEGORIES
+        return cats.get(self.category_num, ("", "#888", "#f0f0f0"))[1]
+
+    @property
+    def bg_color(self) -> str:
+        cats = HAE_CATEGORIES if self.category_type == "HAE" else NEM_CATEGORIES
+        return cats.get(self.category_num, ("", "#888", "#f0f0f0"))[2]
+
+    @property
+    def name(self) -> str:
+        cats = HAE_CATEGORIES if self.category_type == "HAE" else NEM_CATEGORIES
+        return cats.get(self.category_num, ("Ismeretlen",))[0]
 
 
 # ============================================================
-# ELEMZŐ FUNKCIÓK
+# PARSING
 # ============================================================
 
-def parse_annotated_text(annotated_text: str) -> List[AnnotatedSegment]:
-    """Feldolgozza az annotált szöveget"""
-    segments = []
+def parse_annotated_text(text: str) -> List[Segment]:
     pattern = r'\[(HAE|NEM):(\d+)\](.*?)\[/\1\]'
-    
-    for match in re.finditer(pattern, annotated_text, re.DOTALL):
-        segments.append(AnnotatedSegment(
-            text=match.group(3),
-            category_type=match.group(1),
-            category_num=int(match.group(2))
-        ))
-    
+    segments = []
+    for match in re.finditer(pattern, text, re.DOTALL):
+        cat_type = match.group(1)
+        cat_num = int(match.group(2))
+        content = match.group(3).strip()
+        if content:
+            segments.append(Segment(category_type=cat_type, category_num=cat_num, text=content))
     return segments
 
 
-def create_annotation_prompt(law_text: str, exp_text: str) -> str:
-    """Létrehozza az annotálási promptot"""
-    prompt = f"""{SYSTEM_PROMPT}
-
-═══════════════════════════════════════════════════════════════════════
-TÖRVÉNYSZÖVEG (viszonyítási alap):
-═══════════════════════════════════════════════════════════════════════
-
-{law_text}
-
-═══════════════════════════════════════════════════════════════════════
-JOGALKOTÓI INDOKOLÁS (ezt annotáld):
-═══════════════════════════════════════════════════════════════════════
-
-{exp_text}
-"""
-    return prompt
-
-
-def analyze_with_api(law_text: str, exp_text: str, api_key: str) -> Dict:
-    """Elemzi a szöveget Claude Opus 4.5-tel"""
-    
-    client = anthropic.Anthropic(api_key=api_key)
-    prompt = create_annotation_prompt(law_text, exp_text)
-    
-    estimated_output = len(exp_text) * 3
-    max_tokens = max(16384, min(estimated_output // 2, 32000))
-    
-    message = client.messages.create(
-        model="claude-opus-4-5-20251101",
-        max_tokens=max_tokens,
-        messages=[{"role": "user", "content": prompt}]
-    )
-    
-    annotated_text = message.content[0].text
-    segments = parse_annotated_text(annotated_text)
-    
-    # Statisztikák számítása
+def compute_stats(segments: List[Segment]) -> Dict:
     total_chars = sum(s.char_count for s in segments)
-    hae_chars = sum(s.char_count for s in segments if s.is_hae)
-    nem_chars = total_chars - hae_chars
-    
+    hae_chars = sum(s.char_count for s in segments if s.category_type == "HAE")
+    nem_chars = sum(s.char_count for s in segments if s.category_type == "NEM")
+
     hae_pct = (hae_chars / total_chars * 100) if total_chars > 0 else 0
     nem_pct = (nem_chars / total_chars * 100) if total_chars > 0 else 0
-    
-    # Kategória breakdown
+
     hae_breakdown = {}
+    for num, (name, color, bg) in HAE_CATEGORIES.items():
+        chars = sum(s.char_count for s in segments if s.category_type == "HAE" and s.category_num == num)
+        pct = (chars / total_chars * 100) if total_chars > 0 else 0
+        if chars > 0:
+            hae_breakdown[num] = {"name": name, "chars": chars, "pct": pct, "color": color}
+
     nem_breakdown = {}
-    for seg in segments:
-        key = seg.category_num
-        if seg.is_hae:
-            hae_breakdown[key] = hae_breakdown.get(key, 0) + seg.char_count
-        else:
-            nem_breakdown[key] = nem_breakdown.get(key, 0) + seg.char_count
-    
+    for num, (name, color, bg) in NEM_CATEGORIES.items():
+        chars = sum(s.char_count for s in segments if s.category_type == "NEM" and s.category_num == num)
+        pct = (chars / total_chars * 100) if total_chars > 0 else 0
+        if chars > 0:
+            nem_breakdown[num] = {"name": name, "chars": chars, "pct": pct, "color": color}
+
+    # 4 fokozatú minőségi besorolás
+    if hae_pct >= 70:
+        quality = ("Kiváló", "quality-excellent")
+    elif hae_pct >= 50:
+        quality = ("Jó", "quality-good")
+    elif hae_pct >= 30:
+        quality = ("Közepes", "quality-medium")
+    else:
+        quality = ("Gyenge", "quality-poor")
+
     return {
-        "annotated_text": annotated_text,
-        "segments": segments,
         "total_chars": total_chars,
         "hae_chars": hae_chars,
         "nem_chars": nem_chars,
@@ -438,242 +717,211 @@ def analyze_with_api(law_text: str, exp_text: str, api_key: str) -> Dict:
         "nem_pct": nem_pct,
         "hae_breakdown": hae_breakdown,
         "nem_breakdown": nem_breakdown,
+        "quality": quality,
     }
 
 
 # ============================================================
-# MEGJELENÍTÉS - LETISZTULT, ELEGÁNS
+# RENDER FUNCTIONS
 # ============================================================
 
-def color_box(color: str, size: int = 12) -> str:
-    """Színes kocka HTML"""
-    border = "1px solid #999" if color in ["#E0E0E0", "#FFEB3B"] else "none"
-    return f'<span style="display:inline-block;width:{size}px;height:{size}px;background:{color};border:{border};border-radius:2px;vertical-align:middle;margin-right:4px;"></span>'
+def render_sidebar():
+    with st.sidebar:
+        st.markdown('<div class="sidebar-logo">§ HAÉ Elemző</div>', unsafe_allow_html=True)
+
+        api_key = st.text_input(
+            "Anthropic API kulcs",
+            type="password",
+            placeholder="sk-ant-api03-...",
+            help="Az API kulcs a Streamlit Cloud Secrets-ben is tárolható.",
+        )
+        if not api_key:
+            try:
+                api_key = st.secrets.get("ANTHROPIC_API_KEY", "")
+            except Exception:
+                api_key = ""
+
+        st.markdown('<div class="sidebar-title">HAÉ — „hozzáadott érték"</div>', unsafe_allow_html=True)
+        for num, (name, color, bg) in HAE_CATEGORIES.items():
+            st.markdown(f'<div class="legend-item"><span class="legend-swatch" style="background:{color};"></span><span class="legend-code">{num}</span><span class="legend-label">{name}</span></div>', unsafe_allow_html=True)
+
+        st.markdown('<div class="sidebar-title">NEM — nem „hozzáadott érték"</div>', unsafe_allow_html=True)
+        for num, (name, color, bg) in NEM_CATEGORIES.items():
+            st.markdown(f'<div class="legend-item"><span class="legend-swatch" style="background:{color};"></span><span class="legend-code">{num}</span><span class="legend-label">{name}</span></div>', unsafe_allow_html=True)
+
+        st.markdown('<div class="sidebar-title">Modell</div>', unsafe_allow_html=True)
+        st.markdown('<div class="sidebar-model">Claude Opus 4.5</div>', unsafe_allow_html=True)
+
+    return api_key
 
 
-def render_annotated_html(segments: List[AnnotatedSegment]) -> str:
-    """Színes HTML megjelenítés a szegmensekből"""
+def render_metrics(stats: Dict):
+    quality_text, quality_class = stats["quality"]
+    st.markdown(f'''
+        <div class="metric-row">
+            <div class="metric-card">
+                <div class="metric-value">{stats["total_chars"]:,}</div>
+                <div class="metric-label">Összes karakter</div>
+            </div>
+            <div class="metric-card card-hae">
+                <div class="metric-value" style="color:#1e8449">{stats["hae_pct"]:.1f}%</div>
+                <div class="metric-label">HAÉ („hozzáadott érték")</div>
+            </div>
+            <div class="metric-card card-nem">
+                <div class="metric-value" style="color:#c0392b">{stats["nem_pct"]:.1f}%</div>
+                <div class="metric-label">NEM (nem „hozzáadott érték")</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value"><span class="quality-badge {quality_class}">{quality_text}</span></div>
+                <div class="metric-label">Minőség</div>
+            </div>
+        </div>
+    ''', unsafe_allow_html=True)
+
+
+def render_progress_bar(stats: Dict):
+    st.markdown(f'''
+        <div class="progress-container">
+            <div class="progress-labels">
+                <span class="progress-hae-label">HAÉ {stats["hae_pct"]:.1f}% — {stats["hae_chars"]:,} kar</span>
+                <span class="progress-nem-label">NEM {stats["nem_pct"]:.1f}% — {stats["nem_chars"]:,} kar</span>
+            </div>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" style="width:{stats["hae_pct"]:.1f}%"></div>
+            </div>
+        </div>
+    ''', unsafe_allow_html=True)
+
+
+def render_breakdown(stats: Dict):
+    hae_rows = ""
+    for num, data in stats["hae_breakdown"].items():
+        max_pct = max((d["pct"] for d in stats["hae_breakdown"].values()), default=1)
+        bar_w = min(data["pct"] / max_pct * 100, 100) if max_pct > 0 else 0
+        hae_rows += f'<div class="cat-row"><span class="cat-swatch" style="background:{data["color"]}"></span><span class="cat-code">HAÉ:{num}</span><span class="cat-name">{data["name"]}</span><span class="cat-chars">{data["chars"]:,} kar</span><span class="cat-pct" style="color:{data["color"]}">{data["pct"]:.1f}%</span><span class="cat-bar-bg"><span class="cat-bar-fill" style="width:{bar_w:.0f}%; background:{data["color"]}"></span></span></div>'
+
+    nem_rows = ""
+    for num, data in stats["nem_breakdown"].items():
+        max_pct = max((d["pct"] for d in stats["nem_breakdown"].values()), default=1)
+        bar_w = min(data["pct"] / max_pct * 100, 100) if max_pct > 0 else 0
+        nem_rows += f'<div class="cat-row"><span class="cat-swatch" style="background:{data["color"]}"></span><span class="cat-code">NEM:{num}</span><span class="cat-name">{data["name"]}</span><span class="cat-chars">{data["chars"]:,} kar</span><span class="cat-pct" style="color:{data["color"]}">{data["pct"]:.1f}%</span><span class="cat-bar-bg"><span class="cat-bar-fill" style="width:{bar_w:.0f}%; background:{data["color"]}"></span></span></div>'
+
+    st.markdown(f'''
+        <div class="breakdown-grid">
+            <div class="breakdown-section">
+                <div class="breakdown-title hae">HAÉ — „hozzáadott érték" — Bontás</div>
+                {hae_rows or '<div style="color:#bdc3c7; font-size:13px; padding:8px 0;">Nincs HAÉ kategória</div>'}
+            </div>
+            <div class="breakdown-section">
+                <div class="breakdown-title nem">NEM — nem „hozzáadott érték" — Bontás</div>
+                {nem_rows or '<div style="color:#bdc3c7; font-size:13px; padding:8px 0;">Nincs NEM kategória</div>'}
+            </div>
+        </div>
+    ''', unsafe_allow_html=True)
+
+
+def render_annotated_text(segments: List[Segment]):
     html_parts = []
-    
     for seg in segments:
-        text = seg.text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-        text = text.replace('\n', '<br>')
-        
-        bg_color = seg.color
-        # Kontraszt
-        light_colors = ["#FFEB3B", "#E0E0E0", "#9E9E9E", "#03A9F4", "#4CAF50", "#FF9800"]
-        text_color = "#000000" if bg_color in light_colors else "#FFFFFF"
-        
-        border = "1px solid #bbb" if bg_color == "#E0E0E0" else "none"
-        label = f"{seg.category_type}:{seg.category_num}"
-        
-        html_parts.append(f'''<span style="
-            background-color: {bg_color};
-            color: {text_color};
-            padding: 2px 5px;
-            margin: 1px 0;
-            border-radius: 3px;
-            border: {border};
-            display: inline;
-            font-size: 14px;
-            line-height: 1.9;
-        " title="{seg.category_name}"><small style="opacity:0.6;">[{label}]</small> {text}</span>''')
-    
-    return f'<div style="line-height:2.2;font-family:Georgia,serif;text-align:justify;">{" ".join(html_parts)}</div>'
+        escaped = seg.text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        tag = f'<span class="ann-tag" style="background:{seg.color};">{seg.label}</span>'
+        html_parts.append(f'<span class="ann-segment" style="background:{seg.bg_color}; border-bottom-color:{seg.color};">{tag}{escaped}</span>')
+    st.markdown(f'<div class="annotated-container">{" ".join(html_parts)}</div>', unsafe_allow_html=True)
 
 
-def render_legend() -> str:
-    """Jelmagyarázat HTML - letisztult"""
-    html = '<div style="font-size:13px;">'
-    
-    # HAE
-    html += '<div style="margin-bottom:12px;"><strong style="color:#2e7d32;">HAE - Hozzáadott Érték</strong></div>'
-    html += '<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:16px;">'
-    for num, (name, color) in HAE_CATEGORIES.items():
-        html += f'<div style="display:flex;align-items:center;">{color_box(color, 14)}<span style="font-size:12px;">[{num}] {name}</span></div>'
-    html += '</div>'
-    
-    # NEM
-    html += '<div style="margin-bottom:12px;"><strong style="color:#c62828;">NEM - Nem Hozzáadott Érték</strong></div>'
-    html += '<div style="display:flex;flex-direction:column;gap:4px;">'
-    for num, (name, color) in NEM_CATEGORIES.items():
-        html += f'<div style="display:flex;align-items:center;">{color_box(color, 14)}<span style="font-size:12px;">[{num}] {name}</span></div>'
-    html += '</div>'
-    
-    html += '</div>'
-    return html
-
-
-def render_breakdown(result: Dict) -> str:
-    """Kategória breakdown táblázat - letisztult"""
-    html = '<div style="display:flex;gap:30px;flex-wrap:wrap;">'
-    
-    # HAE
-    if result["hae_breakdown"]:
-        html += '<div style="flex:1;min-width:280px;">'
-        html += '<h4 style="color:#2e7d32;margin-bottom:10px;font-weight:500;">HAE Bontás</h4>'
-        html += '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
-        for num, chars in sorted(result["hae_breakdown"].items()):
-            name, color = HAE_CATEGORIES.get(num, ("?", "#000"))
-            pct = chars / result["total_chars"] * 100 if result["total_chars"] > 0 else 0
-            html += f'''<tr style="border-bottom:1px solid #eee;">
-                <td style="padding:6px 4px;">{color_box(color)} HAE:{num}</td>
-                <td style="padding:6px 4px;color:#666;">{name}</td>
-                <td style="padding:6px 4px;text-align:right;">{chars}</td>
-                <td style="padding:6px 4px;text-align:right;font-weight:500;">{pct:.1f}%</td>
-            </tr>'''
-        html += '</table></div>'
-    
-    # NEM
-    if result["nem_breakdown"]:
-        html += '<div style="flex:1;min-width:280px;">'
-        html += '<h4 style="color:#c62828;margin-bottom:10px;font-weight:500;">NEM Bontás</h4>'
-        html += '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
-        for num, chars in sorted(result["nem_breakdown"].items()):
-            name, color = NEM_CATEGORIES.get(num, ("?", "#000"))
-            pct = chars / result["total_chars"] * 100 if result["total_chars"] > 0 else 0
-            html += f'''<tr style="border-bottom:1px solid #eee;">
-                <td style="padding:6px 4px;">{color_box(color)} NEM:{num}</td>
-                <td style="padding:6px 4px;color:#666;">{name}</td>
-                <td style="padding:6px 4px;text-align:right;">{chars}</td>
-                <td style="padding:6px 4px;text-align:right;font-weight:500;">{pct:.1f}%</td>
-            </tr>'''
-        html += '</table></div>'
-    
-    html += '</div>'
-    return html
+def render_segment_list(segments: List[Segment]):
+    html = []
+    for seg in segments:
+        escaped = seg.text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        preview = escaped[:200] + "..." if len(escaped) > 200 else escaped
+        html.append(f'<div class="seg-list-item"><span class="seg-list-badge" style="background:{seg.bg_color}; color:{seg.color}; border:1px solid {seg.color};">{seg.label}</span><span class="seg-list-text">{preview}</span><span class="seg-list-chars">{seg.char_count:,} kar</span></div>')
+    return "".join(html)
 
 
 # ============================================================
-# STREAMLIT APP
+# MAIN
 # ============================================================
 
 def main():
-    st.set_page_config(
-        page_title="HAE Elemző",
-        page_icon="§",
-        layout="wide"
-    )
-    
-    # CSS - letisztult design
-    st.markdown("""
-    <style>
-        .main > div { padding-top: 2rem; }
-        .stTextArea textarea { font-family: Georgia, serif; font-size: 14px; }
-        .stButton button { font-weight: 500; }
-        h1 { font-weight: 400; letter-spacing: -0.5px; }
-        h2, h3 { font-weight: 500; }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    st.title("HAE Elemző")
-    st.markdown("Törvény indokolás hozzáadott érték vizsgálat — Claude Opus 4.5")
-    
-    # Sidebar
-    with st.sidebar:
-        st.header("Beállítások")
-        
-        # API kulcs: először Secrets-ből, ha nincs, akkor input
-        api_key = st.secrets.get("ANTHROPIC_API_KEY", "")
-        if not api_key:
-            api_key = st.text_input(
-                "Anthropic API kulcs", 
-                type="password", 
-                help="Add meg az API kulcsodat. Streamlit Cloud-on használj Secrets-et."
-            )
-        else:
-            st.success("API kulcs betöltve (Secrets)")
-        
-        st.divider()
-        st.header("Jelmagyarázat")
-        st.markdown(render_legend(), unsafe_allow_html=True)
-    
-    # Input mezők
-    col1, col2 = st.columns(2)
-    
+    st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
+    api_key = render_sidebar()
+
+    st.markdown('<div class="main-header">HAÉ Elemző</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-subtitle">Jogalkotói indokolások „hozzáadott értékének" (HAÉ) vizsgálata</div>', unsafe_allow_html=True)
+
+    col1, col2 = st.columns(2, gap="large")
     with col1:
-        st.subheader("Törvényszöveg")
-        law_text = st.text_area(
-            "Másold be a törvény releváns szakaszát",
-            height=300,
-            placeholder="Pl.: 1. § A Kormány állapítja meg a létszámot...",
-            key="law_text",
-            label_visibility="collapsed"
-        )
-    
+        st.markdown('<div class="input-label">Törvényszöveg</div>', unsafe_allow_html=True)
+        law_text = st.text_area("law", height=280, placeholder="Másold be ide a releváns törvényszakasz(oka)t...", label_visibility="collapsed")
     with col2:
-        st.subheader("Indokolás")
-        exp_text = st.text_area(
-            "Másold be a hozzá tartozó indokolást",
-            height=300,
-            placeholder="Pl.: A szabályozás célja, hogy a Kormány határozatban...",
-            key="exp_text",
-            label_visibility="collapsed"
-        )
-    
-    # Elemzés gomb
-    analyze_btn = st.button("Elemzés indítása", type="primary", use_container_width=True)
-    
-    if analyze_btn:
+        st.markdown('<div class="input-label">Indokolás</div>', unsafe_allow_html=True)
+        explanation_text = st.text_area("explanation", height=280, placeholder="Másold be ide a részletes indokolás szövegét...", label_visibility="collapsed")
+
+    st.markdown("<div style='height: 8px'></div>", unsafe_allow_html=True)
+    analyze_clicked = st.button("Elemzés indítása", use_container_width=True)
+
+    if analyze_clicked:
         if not api_key:
-            st.error("Add meg az Anthropic API kulcsodat a bal oldali sávban, vagy állítsd be Secrets-ben.")
-        elif not law_text.strip():
-            st.warning("Add meg a törvényszöveget.")
-        elif not exp_text.strip():
-            st.warning("Add meg az indokolást.")
-        else:
+            st.error("Kérlek, add meg az Anthropic API kulcsodat a bal oldali sávban.")
+            return
+        if not law_text.strip() or not explanation_text.strip():
+            st.error("Kérlek, töltsd ki mindkét szövegmezőt.")
+            return
+
+        user_prompt = f"""Annotáld az alábbi jogalkotói indokolás szövegét:
+
+TÖRVÉNYSZÖVEG:
+{law_text}
+
+JOGALKOTÓI INDOKOLÁS:
+{explanation_text}"""
+
+        try:
             with st.spinner("Elemzés folyamatban..."):
-                try:
-                    result = analyze_with_api(law_text, exp_text, api_key)
-                    
-                    st.divider()
-                    st.header("Eredmények")
-                    
-                    # Metrikák
-                    metric_cols = st.columns(4)
-                    with metric_cols[0]:
-                        st.metric("Összes karakter", f"{result['total_chars']:,}")
-                    with metric_cols[1]:
-                        st.metric("HAE", f"{result['hae_pct']:.1f}%", f"{result['hae_chars']:,} kar")
-                    with metric_cols[2]:
-                        st.metric("NEM", f"{result['nem_pct']:.1f}%", f"{result['nem_chars']:,} kar")
-                    with metric_cols[3]:
-                        if result['hae_pct'] >= 60:
-                            quality = "Jó"
-                        elif result['hae_pct'] >= 30:
-                            quality = "Közepes"
-                        else:
-                            quality = "Gyenge"
-                        st.metric("Minőség", quality)
-                    
-                    # Progress bar
-                    st.progress(result['hae_pct'] / 100, text=f"HAE: {result['hae_pct']:.1f}%")
-                    
-                    # Bontás
-                    st.subheader("Kategória bontás")
-                    st.markdown(render_breakdown(result), unsafe_allow_html=True)
-                    
-                    # Annotált szöveg
-                    st.subheader("Annotált indokolás")
-                    st.markdown(render_annotated_html(result["segments"]), unsafe_allow_html=True)
-                    
-                    # Szegmensek lista
-                    with st.expander("Szegmensek listája"):
-                        for i, seg in enumerate(result["segments"], 1):
-                            st.markdown(f"**{i}. [{seg.category_type}:{seg.category_num}] {seg.category_name}** ({seg.char_count} kar)")
-                            st.text(seg.text[:300] + "..." if len(seg.text) > 300 else seg.text)
-                            st.divider()
-                    
-                    # Nyers output
-                    with st.expander("Nyers annotált szöveg"):
-                        st.code(result["annotated_text"], language=None)
-                    
-                except anthropic.AuthenticationError:
-                    st.error("Hibás API kulcs. Ellenőrizd a kulcsodat.")
-                except anthropic.RateLimitError:
-                    st.error("API rate limit. Várj egy kicsit és próbáld újra.")
-                except Exception as e:
-                    st.error(f"Hiba történt: {str(e)}")
+                client = anthropic.Anthropic(api_key=api_key)
+                response = client.messages.create(
+                    model="claude-opus-4-5-20250929",
+                    max_tokens=8192,
+                    temperature=0,
+                    system=SYSTEM_PROMPT,
+                    messages=[{"role": "user", "content": user_prompt}],
+                )
+                annotated_text = response.content[0].text
+
+            segments = parse_annotated_text(annotated_text)
+
+            if not segments:
+                st.warning("Az elemzés nem adott értékelhető eredményt. Próbáld újra.")
+                with st.expander("Nyers válasz"):
+                    st.code(annotated_text, language=None)
+                return
+
+            stats = compute_stats(segments)
+
+            st.markdown('<div class="results-header">Eredmények</div>', unsafe_allow_html=True)
+            render_metrics(stats)
+            render_progress_bar(stats)
+
+            st.markdown('<div class="section-header">Kategória bontás</div>', unsafe_allow_html=True)
+            render_breakdown(stats)
+
+            st.markdown('<div class="section-header">Annotált indokolás</div>', unsafe_allow_html=True)
+            render_annotated_text(segments)
+
+            with st.expander("Szegmensek listája"):
+                st.markdown(render_segment_list(segments), unsafe_allow_html=True)
+
+            with st.expander("Nyers annotált szöveg"):
+                st.code(annotated_text, language=None)
+
+        except anthropic.AuthenticationError:
+            st.error("Hibás API kulcs. Ellenőrizd a kulcsodat.")
+        except anthropic.RateLimitError:
+            st.error("API rate limit. Várj egy kicsit és próbáld újra.")
+        except Exception as e:
+            st.error(f"Hiba történt: {str(e)}")
+
+    st.markdown('<div class="app-footer">&copy; 2026 dr. Kiss Rebeka</div>', unsafe_allow_html=True)
 
 
 if __name__ == "__main__":
