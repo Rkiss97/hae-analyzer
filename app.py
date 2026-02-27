@@ -858,8 +858,8 @@ def main():
 
     col1, col2 = st.columns(2, gap="large")
     with col1:
-        st.markdown('<div class="input-label">Törvényszöveg</div>', unsafe_allow_html=True)
-        law_text = st.text_area("law", height=280, placeholder="Másold be ide a releváns törvényszakasz(oka)t...", label_visibility="collapsed")
+        st.markdown('<div class="input-label">Normaszöveg</div>', unsafe_allow_html=True)
+        law_text = st.text_area("law", height=280, placeholder="Másold be ide a releváns normaszöveg-szakasz(oka)t...", label_visibility="collapsed")
     with col2:
         st.markdown('<div class="input-label">Indokolás</div>', unsafe_allow_html=True)
         explanation_text = st.text_area("explanation", height=280, placeholder="Másold be ide a részletes indokolás szövegét...", label_visibility="collapsed")
