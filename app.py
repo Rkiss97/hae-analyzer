@@ -53,8 +53,14 @@ CUSTOM_CSS = """
     @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,600;8..60,700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 
     .stApp { font-family: 'DM Sans', sans-serif; }
-    #MainMenu, footer, header {visibility: hidden;}
+    #MainMenu, footer {visibility: hidden;}
     .stDeployButton {display: none;}
+    /* Sidebar nyitó gomb mindig látható maradjon */
+    button[data-testid="stSidebarCollapsedControl"],
+    button[data-testid="collapsedControl"] {
+        visibility: visible !important;
+        display: flex !important;
+    }
 
     /* ── Sidebar — enyhén sötétebb mint a fő terület ── */
     section[data-testid="stSidebar"] {
@@ -172,7 +178,7 @@ CUSTOM_CSS = """
         background: #fff !important;
     }
 
-    /* ── Analyze button ── */
+    /* ── Analyze button — outline stílus ── */
     div.stButton > button {
         width: 100%;
         font-family: 'DM Sans', sans-serif;
@@ -181,16 +187,17 @@ CUSTOM_CSS = """
         letter-spacing: 0.5px;
         padding: 14px 32px;
         border-radius: 10px;
-        border: none;
-        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-        color: #fff;
+        border: 1.5px solid #8d9bab;
+        background: #edf0f4;
+        color: #2c3e50;
         cursor: pointer;
         transition: all 0.25s ease;
-        box-shadow: 0 2px 8px rgba(44,62,80,0.2);
+        box-shadow: none;
     }
     div.stButton > button:hover {
-        background: linear-gradient(135deg, #34495e 0%, #4a6278 100%);
-        box-shadow: 0 4px 16px rgba(44,62,80,0.3);
+        background: #dfe3e9;
+        border-color: #5d6d7e;
+        box-shadow: 0 2px 8px rgba(44,62,80,0.10);
         transform: translateY(-1px);
     }
     div.stButton > button:active { transform: translateY(0); }
@@ -229,18 +236,18 @@ CUSTOM_CSS = """
         box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     }
     .metric-card.card-hae {
-        background: #f0faf4;
-        border: 2px solid #27ae60;
-        box-shadow: 0 2px 8px rgba(39,174,96,0.12);
+        background: #f4fbf7;
+        border: 1.5px solid #8ed4ab;
+        box-shadow: 0 1px 4px rgba(39,174,96,0.08);
     }
     .metric-card.card-nem {
-        background: #fef5f3;
-        border: 2px solid #e74c3c;
-        box-shadow: 0 2px 8px rgba(231,76,60,0.10);
+        background: #fef7f5;
+        border: 1.5px solid #f0a99e;
+        box-shadow: 0 1px 4px rgba(231,76,60,0.07);
     }
     .metric-value {
         font-family: 'Source Serif 4', serif;
-        font-size: 36px;
+        font-size: 26px;
         font-weight: 700;
         color: #1a1f2e;
         line-height: 1.1;
@@ -846,7 +853,7 @@ def main():
     st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
     api_key = render_sidebar()
 
-    st.markdown('<div class="main-header">HAÉ Elemző</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-header">„Hozzáadott Érték" Elemző</div>', unsafe_allow_html=True)
     st.markdown('<div class="main-subtitle">Jogalkotói indokolások „hozzáadott értékének" (HAÉ) vizsgálata</div>', unsafe_allow_html=True)
 
     col1, col2 = st.columns(2, gap="large")
