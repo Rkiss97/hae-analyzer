@@ -442,192 +442,307 @@ CUSTOM_CSS = """
 # ============================================================
 
 SYSTEM_PROMPT = """
-───────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────
 ALAPKÉRDÉS
-───────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────
+Minden szövegrésznél döntsd el: magyaráz-e az indokolás, vagy csak megismétli a törvényszöveget más szavakkal?
 
-Minden szövegrésznél döntsd el: magyaráz-e az indokolás, vagy csak
-megismétli a törvényszöveget más szavakkal?
+Magyarázat: segíti a megértést, kontextust ad, indokol, értékel, vagy olyan információt közöl, ami a törvényszövegből nem olvasható ki, de ahhoz közvetlenül kapcsolódik.
 
-Magyarázat: segíti a megértést, kontextust ad, indokol, értékel,
-vagy olyan információt közöl, ami a törvényszövegből nem olvasható ki.
+Nem magyarázat: ha más szavakkal mondja ugyanazt, amit a törvény, vagy összefoglalja annak tartalmát.
 
-Nem magyarázat: ha más szavakkal mondja ugyanazt, amit a törvény,
-vagy összefoglalja annak tartalmát.
-
-
-───────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────
 HOZZÁADOTT ÉRTÉK KATEGÓRIÁK - jelölés: [HAE:n]...[/HAE]
-───────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────
 
 [HAE:1] CÉLMEGHATÁROZÁS
-   A TÖRVÉNY vagy a KONKRÉT SZAKASZ céljának, a JOGALKOTÓ SZÁNDÉKÁNAK,
-   a SZABÁLYOZÁS CÉLJÁNAK EXPLICIT megfogalmazása.
-   Kulcskifejezések: „célja", „érdekében", „annak érdekében", „biztosítása
-   céljából", „szükségessé teszi/tette", „indokolja".
-   VIGYÁZAT: ha a „célja" vagy „érdekében" csak a törvény tartalmát
-   ismerteti (pl. „a törvény célja, hogy szabályozza a..."), az HAE:2.
-   Ide KIZÁRÓLAG a tényleges társadalmi/politikai/gazdasági célt
-   megfogalmazó szöveg tartozik.
+A törvény vagy a konkrét szakasz céljának, a jogalkotó szándékának, a szabályozás céljának explicit megfogalmazása.
 
-   Példák:
-   "A törvényjavaslat alapvető célja új szakosított hitelintézeti típus
-    bevezetése a lakáscélú előtakarékosság ösztönzése céljából."
-   "A szabályozás célja, hogy megalapozza a lakáselőtakarékossági
-    tevékenységre specializálódott pénztárak hosszú távú stabil működését."
-   "A gyülekezési jog első generációs politikai jog, amely alapján
-    mindenki jogosult békés gyűléseken részt venni."
-   "A törvény abból indul ki, hogy az új Polgári Törvénykönyvben egy
-    szociális elemekkel átszőtt piacgazdaság magánjogi feltételeit kell
-    megteremteni."
+Jellemző fordulatok:
+	"a törvény célja, hogy"
+	"e szakasz célja"
+	"a szabályozás célja"
+	"e rendelkezés célja"
+	"a jogalkotó szándéka"
+	"célul tűzi ki"
+
+NEM ide tartozik (ezek HAE:8 – egyéb magyarázat):
+	"X érdekében Y-t tesz lehetővé" (ez magyarázat, de nem célmeghatározás)
+	"a feladatok ellátása érdekében" (ha nem szerepel a törvényben, akkor ez kontextus, további magyarázat, de nem feltétlenül célmeghatározás)
+	"lehetőséget ad arra, hogy" (ez az, amit a törvény tesz, de nem célmeghatározás)
+	"megteremti a lehetőségét annak, hogy" (ez eredmény, de nem célmeghatározás)
+
+Ha az indokolás azt írja le „zanzásítva", hogy mit tesz lehetővé a törvény, az kivonatolás (NEM:3) vagy átfogalmazás (NEM:2), nem célmeghatározás.
+
+Példa – HAE:1 (valódi célmeghatározás):
+	"A törvény célja a gyülekezési jog gyakorlásának szabályozása."
+	"A jogalkotó szándéka a korábbi hiányosságok orvoslása."
+
+Példa – HAE:8 (egyéb magyarázat, NEM célmeghatározás):
+	"A közbiztonság érdekében szükségessé válhat az ellenőrzés."
+
+	"A feladatok ellátása érdekében elengedhetetlen a jelenlét."
+	"Az együttműködési kötelezettség garantálja a békés jelleg biztosítását." (ez utóbbi azért HAE:8, mert: leírja az eredményt (mit garantál), magyarázza a szabály funkcióját, de NEM mondja ki, hogy mi lenne "a törvény célja" vagy "a jogalkotó szándéka", adott jogintézmény, szakasz, bevezetett jogintézmény stb.)
+
+[HAE:2] BELSŐ UTALÁS (ugyanezen törvényen belüli kereszthivatkozás)
+Utalás a törvény szövegének más rendelkezéseire.
+
+Példák: 
+	"az 51. § szerinti szabályokat alkalmazni kell",
+	"a fenti szabályokkal összhangban", 
+	"e törvény 10. §-a alapján", 
+	"a javaslat 2. § (2) bekezdése egyértelművé teszi"
+
+[HAE:3] KÜLSŐ JOGFORRÁSRA HIVATKOZÁS (más jogszabályra, irányelvre stb. utalás)
+Konkrétan megnevezett más jogszabályra való hivatkozás (de akár konkrét jogszabály szám nélkül).
+
+Példák: 
+	"az Alaptörvény 15. cikk (2) bekezdése szerint",
+	"a 2010. évi XLIII. törvény (Ksztv.) szabályozását átvéve",
+	"a Ksztv. rendelkezéseit átemelve", 
+	"a Ptk. szerint"
+	"a jogalkotásról szóló törvény alapján",
+	"a kereskedelemről szóló törvényben meghatározott"
+
+Ide tartoznak az alacsonyabb jogforrásokra (korm. rendeletekre) való utalások is.
+
+Példák: 
+	"a veszélyhelyzet kihirdetéséről szóló 478/2020. (XI. 3.) Korm. rendelet szerinti"
+	"a zenés, táncos gyűlések működésének biztonságosabbá tételéről szóló 23/2011. (III. 8.) Korm. rendelet"
+
+Fontos, hogy salátatörvény jellegű (sok törvényt egyszerre módosító) törvényeknél pusztán azért, mert az indokolás szövegében benne van sok más jogszabály neve, nem HAE, ha pont azt a jogszabályt módosítja az adott törvény.
+
+[HAE:4] BÍRÓSÁGI DÖNTÉSEK, JOGGYAKORLAT ÉS AB HATÁROZATOK
+Bírósági döntésekre, AB határozatokra, EJEB döntésére, joggyakorlatra, bírósági gyakorlatra, konkrét ítéletre való utalás.
+
+Ide tartozik: joggyakorlat alapján levont olyan következtetés, ami közvetlen utalást tartalmaz valamilyen bírósági álláspontra, jogalkalmazói visszajelzés alapján történő jogalkotásra való utalás, bíróságok álláspontjának kifejtése, arra való konkrét utalással.
 
 
-[HAE:2] JOGSZABÁLYON BELÜLI UTALÁS MÁS RENDELKEZÉSRE
-   A TÖRVÉNY SZERKEZETÉNEK ISMERTETÉSE, belső összefüggések bemutatása,
-   paragrafusokra vagy fejezetekre utalás, a szabályozás logikájának
-   vagy felépítésének leírása.
-   Ha az indokolás tartalmilag ugyanazt mondja, mint a törvényszöveg,
-   de a szabályozás szerkezetére/kontextusára utal (pl. „a törvény X
-   fejezetében..."), az HAE:2.
 
+Példák: 
+	"a bírói gyakorlattal egyezően", 
+	„az AB határozat alapján", 
+	"általános joggyakorlattal egyezően"
 
-[HAE:3] KIUTALÁS MÁS JOGFORRÁSRA
-   Más jogszabályra, EU-jogra, nemzetközi egyezményre, Alaptörvényre
-   történő hivatkozás. IDE TARTOZIK az Alkotmánybíróság (AB) konkrét
-   határozatára hivatkozás is, ha jogforrásként/precedensként hivatkozik
-   rá. (De ha jogalkalmazási tapasztalatot idéz, az HAE:4.)
+NEM ide tartozik: alapvető jogokra, alapelvekre való általános utalás.
 
-   Példák:
-   "a Ptk. 6:519. §-a alapján"
-   "összhangban az EU 2014/65/EU irányelvével"
-   "az Alaptörvény XXVIII. cikke értelmében"
+[HAE:5] SZAKIRODALOM, KUTATÁSI EREDMÉNY
+Tudományos művekre, szakmai jelentésekre való hivatkozás.
 
+Példák: 
+	"a KSH jelentése szerint", 
+	"az OECD ajánlásaival összhangban", 
+	"Vékás Lajos professzor munkái", 
+	"a szakirodalom álláspontját követve", 
+	"a szakirodalmi álláspont alapján"
 
-[HAE:4] JOGGYAKORLATRA VALÓ HIVATKOZÁS
-   Bírói gyakorlatra, ítélkezési tapasztalatokra, jogalkalmazási
-   gyakorlatra hivatkozás. AB határozatra hivatkozás, ha nem
-   jogforrásként, hanem a tapasztalat/gyakorlat bemutatásaként
-   szerepel.
+[HAE:6] ÖSSZEVETÉS KORÁBBI SZABÁLYOZÁSSAL 
+A korábbi és új szabályozás viszonyának bemutatása, konkrét jogszabály megnevezése nélkül.
 
-   Példák:
-   "a bírói gyakorlat e kérdésben nem egységes"
-   "a Kúria joggyakorlat-elemző csoportjának megállapítása szerint"
+Ide tartozik, ha az indokolás jelzi, hogy valamely rendelkezés "új", "bevezet", "meghonosít", "kivezet", "megszüntet", "rendelkezést fenntart", "változtat", "eltörli" – ezek korábbi állapothoz való viszonyítást írnak le.
 
-
-[HAE:5] SZAKIRODALOMRA VALÓ HIVATKOZÁS
-   Tudományos forrásra, kutatási eredményre, szakirodalomra hivatkozás
-   KONKRÉT szerzővel, művel, adattal.
-
-   Példák:
-   "Kukorelli István az 55/2001. (XI. 29.) AB határozathoz fűzött
-    párhuzamos indokolásában kifejtette, hogy..."
-   "egy 2019-es MTA-kutatás szerint a kkv-k 47%-a..."
-
-
-[HAE:6] ÖSSZEVETÉS A KORÁBBI SZABÁLYOZÁSSAL
-   A korábbi jogi állapot bemutatása, változások ismertetése,
-   összehasonlítás a korábbi szabályozással, új elemek kiemelése.
-
-   Kulcskifejezések: „korábban", „a korábbi szabályozáshoz képest",
-   „a hatályos jog szerint", „eddig", „újdonság", „módosítja".
-
+Példák: 
+	"a korábbi szabályozással egyezően", 
+	"a hatályos szabályozást átvéve", 
+	"új eleme a törvénynek", 
+	"korábban nem volt", 
+	"közjogi hagyományoknak megfelelően", 
+	"fontos változás", 
+	"vonatkozó rendelkezések elhagyásra kerültek", 
+	"továbbra is", 
+	"adott rendelkezés kivezetésével"
 
 [HAE:7] HATÁSVIZSGÁLAT BEMUTATÁSA
-   A szabályozás hatásainak bemutatása KONKRÉT ADATOKKAL, SZÁMOKKAL
-   alátámasztva — érintett csoportok létszáma, költségvetési hatás
-   Ft-ban, adminisztratív terhek változása stb.
-   VIGYÁZAT: ha nincs konkrét szám, csak általános utalás a hatásra,
-   az HAE:8.
+A szabályozás hatásainak bemutatása jellemzően konkrét adatokkal, tényekkel alátámasztva. Előzetes hatásvizsgálatra, kutatásra, felmérésre való hivatkozás eredményekkel.
 
+Ide tartozik, ha az indokolás tartalmazza az alábbiakat:
+	Érintett csoportok létszáma (fő, db, vállalkozás)
+Pl.: "kb. 50 000 vállalkozást érint", "1 millió nyugdíjast érint"
+	Költségvetési / gazdasági hatás konkrét összeggel (Ft)
+     Pl.: "évi 2 milliárd Ft megtakarítás", "500 millió Ft többletkiadás"
+	Adminisztratív terhek változása számszerűsítve (Ft, óra, %)
+     Pl.: "évi 10 000 Ft/vállalkozás tehercsökkenés", "30%-kal kevesebb lesz az ügyintézési idő"
 
-[HAE:8] EGYÉB MAGYARÁZATOK, PÉLDÁK
-   Minden olyan tartalmi hozzáadott érték, ami nem sorolható a fenti
-   kategóriákba: általános háttér, kontextus, elméleti megalapozás,
-   gyakorlati példák ADAT NÉLKÜL, fogalommagyarázat, nemzetközi
-   kitekintés konkrét adat nélkül.
+	 Foglalkoztatási hatás létszámmal
+     Pl.: "200 új munkahely", "50 fős létszámcsökkenés"
+	 Más országok tapasztalata konkrét eredményekkel
+     Pl.: "Ausztriában 15%-os növekedést eredményezett, a hatásvizsgálat alapján hasonló hatások várhatók Magyarországon is a szabályozás bevezetésével"
+	Konkrét időtáv
+     Pl.: "2020-2024 között", "a bevezetést követő 4 évben"
 
+NEM ide tartozik (ezek HAE:8):
+	"adminisztratív terheket csökkent" (szám nélkül)
+	"a jogalkalmazást megkönnyíti" (konkrétum nélkül)
+	"költségvetési hatása minimális" (összeg nélkül)
+	"a többi EU tagállamhoz hasonlóan" (eredmény nélkül)
+	"gazdasági szempontból indokolt" (adat nélkül)
+	"széles társadalmi réteget érint" (létszám nélkül)
 
-───────────────────────────────────────────────────────────────────────
+[HAE:8] EGYÉB MAGYARÁZAT ÉS PÉLDÁK
+Indokolás, érvelés, háttérinformáció, összefüggés-feltárás.
+
+Példák: 
+	"tekintettel arra, hogy", 
+	"figyelemmel arra", 
+	"mivel",
+	"ezért szükséges", 
+	"ugyanis", 
+	"ennek indoka"
+
+Ide tartozik még:
+	A törvényben nem szereplő konkrét példák.
+	Általános hatásokra utalás konkrét adat nélkül ("csökkenti a terheket", "megkönnyíti a jogalkalmazást")
+	Nemzetközi összehasonlítás adatok nélkül ("EU tagállamokhoz hasonlóan", "nemzetközi gyakorlatnak megfelelően")
+
+────────────────────────────────────────────────────
 NEM HOZZÁADOTT ÉRTÉK KATEGÓRIÁK - jelölés: [NEM:n]...[/NEM]
-───────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────
 
-[NEM:1] SZÓ SZERINTI ÁTMÁSOLÁS
-   Az indokolás szó szerint megegyezik a törvényszöveggel.
+[NEM:1] SZÓ SZERINTI ÁTMÁSOLÁS 
+A törvényszöveg változtatás nélküli átvétele.
 
-[NEM:2] ÁTFOGALMAZÁS
-   Tartalmilag ugyanaz, mint a törvényszöveg, csak más szavakkal,
-   más mondatszerkezettel — de NEM ad hozzá semmit.
+[NEM:2] ÁTFOGALMAZÁS (parafrázis)
+ A törvényszöveg más szórenddel, szinonimákkal való visszaadása, amely nem ad új információt.
 
 [NEM:3] KIVONATOLÁS
-   A törvényszöveg kivonatolt összefoglalása — rövidebb, de tartalmilag
-   nem ad hozzá.
-
-[NEM:4] NORMASZÖVEGNEK VALÓ ELLENTMONDÁS
-   Az indokolás nem ahhoz a szakaszhoz tartozik, amelyhez rendelték,
-   vagy tartalmilag téves, ellentmond a normaszövegnek.
+A törvényszöveg tömörítése, összefoglalása magyarázat nélkül.
 
 
-───────────────────────────────────────────────────────────────────────
+Jellemző formulák: 
+	"a törvény rendelkezik", 
+	"meghatározza",
+	"szabályozza", 
+	"rögzíti", 
+	"kimondja"
+
+Szintén ide tartozik, ha az indokolás csak annyit mond – de nem fejti ki jobban a mögöttes okokat vagy egyéb részleteket –, hogy "hatályon kívül helyező rendelkezések", "jogtechnikai jellegű pontosítás", " felhatalmazó rendelkezések", "technikai jellegű szövegcserés módosítás", "terminológiai pontosítást tartalmaz", "jogharmonizációs záradékot tartalmaz", "nyelvhelyességi korrekció", "hatályon kívül helyező rendelkezéseket tartalmaz", "sarkalatossági záradék kiegészítése", "átmeneti rendelkezés". És ezekhez hasonló tartalomjegyzék szerű kivonatolások.
+
+[NEM:4] HIBÁS INDOKOLÁS 
+
+Ide tartozik:
+	Ellentmondás: az indokolás tartalmilag ellentmond a törvényszövegnek
+	Normaszöveghez nem kapcsolódó magyarázat: az indokolás nem a hivatkozott szakaszhoz kapcsolódik, hanem más rendelkezéseket ismertet, tartalmilag nincsen köze a hozzá tartozó törvényszöveghez.
+	Olyan többlet információk, amik nem magyarázatok, hanem túllépnek a normaszövegen, az abban található állításokból egyáltalán nem következnek.
+
+────────────────────────────────────────────────────
 SZEGMENTÁLÁSI SZABÁLYOK
-───────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────
 
-Kötelező mondaton belül is szegmentálni, ha vegyes a tartalom.
+Kötelező mondaton belül is szegmentálni, ha vegyes a tartalom. 
+Ezekben az esetekben ne annotálj teljes mondatokat egyben!
+
+Példa – beékelt HAE:6: 
+"A törvény – a hatályos szabályozást átvéve – rendelkezik a testületekről."
+Helyes annotáció:
+[NEM:3] A törvény – [/NEM] [HAE:6] a hatályos szabályozást átvéve [/HAE] [NEM:3] – rendelkezik a testületekről. [/NEM]
 
 Példa – beékelt HAE:3:
-"A törvény – az Alkotmánybíróság határozatára figyelemmel – új szabályokat vezet be."
+"A törvény – átemelve a Ksztv. rendelkezéseit – meghatározza a hatásköröket."
 Helyes annotáció:
-[HAE:2] A törvény – [/HAE][HAE:3] az Alkotmánybíróság határozatára figyelemmel [/HAE][HAE:6] – új szabályokat vezet be. [/HAE]
+[NEM:3] A törvény – [/NEM] [HAE:3] átemelve a Ksztv. rendelkezéseit [/HAE] [NEM:3] – meghatározza a hatásköröket. [/NEM]
+ 
+Példa – célmeghatározás HAE:1 + kivonatolás NEM3:
+"A törvény a szervi és személyi megközelítés egységét tűzi ki célul, szabályozza a szervek jogállását."
 
-Példa – célmeghatározás + szerkezet:
-"A törvény célja a hatékonyabb működés, ennek érdekében szabályozza a szervek jogállását."
+
+
 Helyes annotáció:
-[HAE:1] A törvény célja a hatékonyabb működés, [/HAE][HAE:2] ennek érdekében szabályozza a szervek jogállását. [/HAE]
+[HAE:1] A törvény a szervi és személyi megközelítés egységét tűzi ki célul, [/HAE] [NEM:3] szabályozza a szervek jogállását. [/NEM]
 
+Figyelj a gondolatjelek, zárójelek közötti beszúrásokra. Ezek gyakran külön kategóriába tartoznak!
 
-───────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────
 ELHATÁROLÁSOK
-───────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────
 
-HAE:2 vs HAE:6:
-   A törvény szerkezetét, tartalmát ismerteti → HAE:2
-   A változást, újítást, korábbi állapotot mutatja be → HAE:6
+•	HAE:2 vs HAE:3 vs HAE:6:
+	Ugyanezen törvény szakaszára utal → HAE:2
+	Más jogszabályra, konkrétan megnevezve (Ksztv., Ptk., stb.) → HAE:3
+	Korábbi/hatályos szabályozásra általában, jogszabály megnevezése nélkül → HAE:6
 
-HAE:3 vs HAE:4:
-   Jogszabályra, AB határozatra hivatkozás → HAE:3
-   Bírói gyakorlatra, jogalkalmazási tapasztalatra utalás → HAE:4
+•	NEM:2 vs NEM:3:
+	Átfogalmazás (NEM:2): a törvény egy részét mondja más szavakkal
+	Kivonatolás (NEM:3): a törvény tartalmát foglalja össze, tömöríti
 
-HAE:7 vs HAE:8:
-   Konkrét adat, szám, tény → HAE:7
-   Általános utalás hatásra, adat nélkül → HAE:8
+•	HAE:8 vs NEM:3 elhatárolás:
+	Kivonatolás (NEM:3): pusztán összefoglalja vagy tömöríti a törvényszöveget, nem ad hozzá semmit a megértéshez.
+	Magyarázat (HAE:8): segíti a megértést, akkor is, ha a törvényből kiolvasható az információ. 
+Ide tartozik:
+o	Ha az indokolás összefüggések mentén fűzi össze a szöveget
+o	Ha strukturáltan mutatja be a szabályozás logikáját
+o	Ha egy laikus számára érthetőbbé teszi a törvényt (pl. hosszabb felsorolás, komplex szabályrendszer magyarázata)
+o	Ha összekapcsolja a különböző szakaszok tartalmát
+o	Jellemző fordulatok: "Nem csak X, hanem Y is", "beszélhetünk", "tekinthetünk", "ez azt jelenti, hogy", "vagyis", "azaz"
 
-HAE:6 vs HAE:8:
-   Korábbi szabályozáshoz viszonyít, változást mutat be → HAE:6
-   Általános háttér, kontextus, elméleti megalapozás → HAE:8
+Példák:
+
+NEM:3 (kivonatolás – nem segíti a megértést):
+	"A törvény meghatározza a kormányzati igazgatási szervek körét."
+	"A törvény szabályozza a tisztségviselők jogviszonyát."
+
+HAE:8 (magyarázat – segíti a megértést):
+	"A kormányzati igazgatási szervek köre egyszerre jelent egy bővebb
+	és egy szűkebb szervi kört a központi államigazgatási szervekhez képest."
+	"Nem csak szervek, hanem egyes vezetők tekintetében is beszélhetünk
+	irányításról."
 
 
-───────────────────────────────────────────────────────────────────────
+	"A három jogviszony-típus eltérő jellegű feladatokat lát el: a politikai
+	a kormányzati döntéshozatalban, a biztosi a kiemelt projektek vezetésében,
+	a szakmai pedig a napi operatív működésben vesz részt."
+	"Valamilyen másik jogintézményre irányadó szabályoktól eltérő módon szabályozza"
+
+A kérdés tehát: segíti-e a laikus olvasó megértését, vagy csak megismétli/tömöríti a törvényt?
+
+•	HAE:7 vs HAE:8 elhatárolás:
+A hatásvizsgálat (HAE:7) csak akkor, ha van benne konkrét adat vagy tényekkel való alátámasztás.
+Ha csak általánosan utal valamilyen hatásra, az magyarázat (HAE:8).
+
+Példák:
+
+HAE:7 (van konkrét adat):
+	"Az intézkedés kb. 120 000 vállalkozást érint, évi átlagosan 15 000 Ft adminisztratív tehercsökkenést eredményezve."
+	"A KSH adatai szerint 2019-ben 340 000 egyéni vállalkozó működött, közülük mintegy 40%-ot érint a szabályozás."
+	"Ausztriában a hasonló szabályozás 15%-os növekedést eredményezett, a hatásvizsgálat alapján hasonló eredmények várhatók."
+	"A bevezetést követő első évben 25%-kal csökkent az ügyintézési idő."
+
+HAE:8 (nincs konkrét adat, tény, hatásvizsgálat mögötte, csak általános utalás):
+	"Az intézkedés jelentős számú vállalkozást érint és csökkenti az adminisztratív terheket."
+	"A szabályozás a vállalkozások széles körét érinti."
+	"A többi EU tagállamhoz hasonlóan"
+	"A V4 országokban is hasonló szabályozás működik"
+	"Nemzetközi gyakorlatnak megfelelően"
+	"Gazdasági szempontból indokolt"
+	"A jogalkalmazást megkönnyíti"
+
+HAE:2 vs NEM:4 elhatárolás:
+	HAE:2: Belső utalás, ami ÖSSZHANGBAN VAN a törvényszöveggel
+	NEM:4: Az állítás ELLENTMOND a törvénynek, vagy más értéket mond
+
+────────────────────────────────────────────────────
 KIMENET
-───────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────
 
-Az indokolás teljes szövegét annotálni kell, minden karakter tartozzon
-valamelyik kategóriába.
-
-A válaszban CSAK az annotált szöveg szerepeljen, semmilyen más szöveg,
-magyarázat vagy megjegyzés ne legyen.
+Az indokolás teljes szövegét annotálni kell, minden karakter tartozzon valamelyik kategóriába.
 
 
-───────────────────────────────────────────────────────────────────────
+
+A válaszban csak az annotált szöveg szerepeljen, a megfelelő jelölésekkel, más szöveg, magyarázat vagy megjegyzés ne legyen.
+
+────────────────────────────────────────────────────
 KONZISZTENCIA
-───────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────
 
-Konzisztensen tartsd fenn az egész dokumentum egységében az alkalmazott
-annotálási szabályokat.
+Konzisztensen tartsd fenn az egész dokumentum egységben az alkalmazott annotálási szabályokat.
 
-Légy következetes a kategóriák alkalmazásában.
+Légy következetes a kategóriák alkalmazásában. Ha egy adott típusú szövegrészt (pl. "a törvény szabályozza...") NEM:3-nak minősítettél, akkor minden hasonló szerkezetű, logikájú, tartalmú szövegrészt is NEM:3-nak kell minősítened, ha adott szakasz vonatkozásában a törvényszöveghez viszonyítva ugyanannak a kategóriának felel meg.
 
-Ellenőrizd, hogy mondaton belül is szegmentáltál, ha vegyes a tartalom.
-Vegyes tartalomnál ne annotálj teljes mondatokat egyben!
+Ellenőrizd, hogy mondaton belül is szegmentáltál, ha vegyes a tartalom. Vegyes tartalomnál ne annotálj teljes mondatokat egyben!
+
+Kerülendő: inkonzisztens döntés a határeseteknél.
+
 """
+
 
 
 # ============================================================
@@ -915,11 +1030,9 @@ JOGALKOTÓI INDOKOLÁS:
             st.markdown('<div class="section-header">Annotált indokolás</div>', unsafe_allow_html=True)
             render_annotated_text(segments)
 
+            st.markdown("<div style='height: 24px'></div>", unsafe_allow_html=True)
             with st.expander("Szegmensek listája"):
                 st.markdown(render_segment_list(segments), unsafe_allow_html=True)
-
-            with st.expander("Nyers annotált szöveg"):
-                st.code(annotated_text, language=None)
 
         except anthropic.AuthenticationError:
             st.error("Hibás API kulcs. Ellenőrizd a kulcsodat.")
