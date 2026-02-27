@@ -1,5 +1,5 @@
 """
-HAÉ Elemző — Jogalkotói indokolások „hozzáadott értékének" (HAÉ) vizsgálata
+HAÉ Elemző — Jogalkotói indokolások "hozzáadott értékének" (HAÉ) vizsgálata
 Streamlit alkalmazás Claude Opus 4.5 API-val
 
 © 2026 dr. Kiss Rebeka
@@ -863,11 +863,11 @@ def render_sidebar():
             except Exception:
                 api_key = ""
 
-        st.markdown('<div class="sidebar-title">HAÉ — „hozzáadott érték"</div>', unsafe_allow_html=True)
+        st.markdown('<div class="sidebar-title">HAÉ — "hozzáadott érték"</div>', unsafe_allow_html=True)
         for num, (name, color, bg) in HAE_CATEGORIES.items():
             st.markdown(f'<div class="legend-item"><span class="legend-swatch" style="background:{color};"></span><span class="legend-code">{num}</span><span class="legend-label">{name}</span></div>', unsafe_allow_html=True)
 
-        st.markdown('<div class="sidebar-title">NEM — nem „hozzáadott érték"</div>', unsafe_allow_html=True)
+        st.markdown('<div class="sidebar-title">NEM — nem "hozzáadott érték"</div>', unsafe_allow_html=True)
         for num, (name, color, bg) in NEM_CATEGORIES.items():
             st.markdown(f'<div class="legend-item"><span class="legend-swatch" style="background:{color};"></span><span class="legend-code">{num}</span><span class="legend-label">{name}</span></div>', unsafe_allow_html=True)
 
@@ -887,11 +887,11 @@ def render_metrics(stats: Dict):
             </div>
             <div class="metric-card card-hae">
                 <div class="metric-value" style="color:#1e8449">{stats["hae_pct"]:.1f}%</div>
-                <div class="metric-label">HAÉ („hozzáadott érték")</div>
+                <div class="metric-label">HAÉ ("hozzáadott érték")</div>
             </div>
             <div class="metric-card card-nem">
                 <div class="metric-value" style="color:#c0392b">{stats["nem_pct"]:.1f}%</div>
-                <div class="metric-label">NEM (nem „hozzáadott érték")</div>
+                <div class="metric-label">NEM (nem "hozzáadott érték")</div>
             </div>
             <div class="metric-card">
                 <div class="metric-value"><span class="quality-badge {quality_class}">{quality_text}</span></div>
@@ -931,11 +931,11 @@ def render_breakdown(stats: Dict):
     st.markdown(f'''
         <div class="breakdown-grid">
             <div class="breakdown-section">
-                <div class="breakdown-title hae">HAÉ — „hozzáadott érték" — Bontás</div>
+                <div class="breakdown-title hae">HAÉ — "hozzáadott érték" — Bontás</div>
                 {hae_rows or '<div style="color:#bdc3c7; font-size:13px; padding:8px 0;">Nincs HAÉ kategória</div>'}
             </div>
             <div class="breakdown-section">
-                <div class="breakdown-title nem">NEM — nem „hozzáadott érték" — Bontás</div>
+                <div class="breakdown-title nem">NEM — nem "hozzáadott érték" — Bontás</div>
                 {nem_rows or '<div style="color:#bdc3c7; font-size:13px; padding:8px 0;">Nincs NEM kategória</div>'}
             </div>
         </div>
@@ -968,8 +968,8 @@ def main():
     st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
     api_key = render_sidebar()
 
-    st.markdown('<div class="main-header">„Hozzáadott Érték" Elemző</div>', unsafe_allow_html=True)
-    st.markdown('<div class="main-subtitle">Jogalkotói indokolások „hozzáadott értékének" (HAÉ) vizsgálata</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-header">"Hozzáadott Érték" Elemző</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-subtitle">Jogalkotói indokolások "hozzáadott értékének" (HAÉ) vizsgálata</div>', unsafe_allow_html=True)
 
     col1, col2 = st.columns(2, gap="large")
     with col1:
