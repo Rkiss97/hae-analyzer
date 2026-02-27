@@ -855,7 +855,7 @@ def render_sidebar():
             "Anthropic API kulcs",
             type="password",
             placeholder="sk-ant-api03-...",
-            help="Az API kulcs a Streamlit Cloud Secrets-ben is tárolható.",
+            help="Add meg saját Anthropic API kulcsodat. Kulcsot a console.anthropic.com felületen generálhatsz. A kulcs nem kerül tárolásra.",
         )
         if not api_key:
             try:
