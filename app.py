@@ -636,7 +636,7 @@ b) legfeljebb a gyermek hároméves koráig, három vagy több gyermeket nevelő
 köteles foglalkoztatni. Ezt követően a kormánytisztviselő munkaidejét a kérelem benyújtása előtti mérték szerint kell megállapítani.
 (7) Az (1)–(6) bekezdés nem alkalmazható a vezetői álláshelyen foglalkoztatott kormánytisztviselő tekintetében.”
 indokolás: "A törvény a teljes munkaidőben foglalkoztatott kormánytisztviselő írásbeli kérelmére a kinevezésben heti húszórás részmunkaidőt kikötését teszi lehetővé, ha a kormánytisztviselő a kérelem benyújtásakor gyermeke harmadik életéve betöltéséig - a gyermek gondozása céljából - fizetés nélküli szabadságra jogosult."
-ellentmondás: „húszórás”
+ellentmondás: „húszórás” - de csak ez a kifejezés, mondaton belül kell szegmentálni, ha indokolt.
 
 ────────────────────────────────────────────────────
 SZEGMENTÁLÁSI SZABÁLYOK
