@@ -843,9 +843,7 @@ def render_sidebar():
             "Anthropic API kulcs",
             type="password",
             placeholder="sk-ant-api03-...",
-            help="Add meg saját Anthropic API kulcsodat. 
-            Kulcsot a console.anthropic.com felületen generálhatsz. 
-            A kulcs nem kerül tárolásra.",
+            help="Add meg saját Anthropic API kulcsodat. Kulcsot a console.anthropic.com felületen generálhatsz. Az itt megadott kulcs nem kerül tárolásra.",
         )
         if not api_key:
             try:
